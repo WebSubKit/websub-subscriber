@@ -74,12 +74,13 @@ extension SubscriberRouteCollection {
             on: req
         )
         let hubURI = URI(string: subscription.hub)
-        let hubRequest = [
-            "hub.callback": subscription.callback,
-            "hub.topic": subscription.topic,
-            "hub.verify": "sync",
-            "hub.mode": "subscribe",
-        ]
+        let hubRequest = SubscriptionRequest(
+            callback: subscription.callback,
+            topic: subscription.topic,
+            verify: "sync",
+            mode: .subscribe,
+            leaseSeconds: try? req.query.get(at: "lease_seconds")
+        )
         if req.application.environment == .testing {
             return try await hubRequest.encodeResponse(status: .ok, for: req)
         }
