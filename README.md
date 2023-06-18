@@ -27,7 +27,7 @@ A WebSub Subscriber implementation written in Swift for usage with 💧 [Vapor](
   * [ ] sha256
   * [ ] sha384
   * [ ] sha512
-* [ ] 1xx: Requests a subscription with a specific `lease_seconds` (optional, hub may ignore)
+* [x] 1xx: Requests a subscription with a specific `lease_seconds` (optional, hub may ignore)
 * [x] Callback URL is unique per subscription (should)
 * [x] Callback URL is an unguessable URL (should)
 * [ ] 1xx: Sends an unsubscription request
