@@ -62,38 +62,9 @@ extension SubscriberRouteCollection {
     }
     
     public func subscribe(req: Request) async throws -> Response {
-        let requestedTopic = try req.query.get(at: "topic") as String
-        guard let (topic, hub) = try await req.client.get(URI(string: requestedTopic)).extractWebSubLinks() else {
-            return Response(status: .expectationFailed)
-        }
-        let subscription = try await self.saveSubscription(
-            topic: topic,
-            hub: hub,
-            callback: req.generateCallbackURLString(),
-            state: .unverified,
-            on: req
-        )
-        let hubURI = URI(string: subscription.hub)
-        let hubRequest = SubscriptionRequest(
-            callback: subscription.callback,
-            topic: subscription.topic,
-            verify: "sync",
-            mode: .subscribe,
-            leaseSeconds: try? req.query.get(at: "lease_seconds")
-        )
-        if req.application.environment == .testing {
-            return try await hubRequest.encodeResponse(status: .ok, for: req)
-        }
-        let subscribe = try await req.client.post(hubURI) { subscribeRequest in
-            return try subscribeRequest.content.encode(hubRequest, as: .urlEncodedForm)
-        }
-        if subscribe.status != .accepted {
-            if let subscribeBody = subscribe.body {
-                return Response(status: .expectationFailed, body: .init(buffer: subscribeBody))
-            }
-            return Response(status: .expectationFailed)
-        }
-        return Response(status: .ok)
+        let requestedTopic: String = try req.query.get(at: "topic")
+        let subscription = try await self.discover(requestedTopic, on: req)
+        return try await self.request(req, subscription: subscription, to: URI(string: subscription.hub))
     }
     
     public func handle(req: Request) async throws -> Response {
@@ -145,6 +116,49 @@ extension SubscriberRouteCollection {
 
 
 fileprivate extension SubscriberRouteCollection {
+    
+    func discover(_ topic: String, on req: Request) async throws -> Subscription {
+        if let requestedHub: String = try req.query.get(at: "hub") {
+            return try await self.saveSubscription(
+                topic: topic,
+                hub: requestedHub,
+                callback: req.generateCallbackURLString(),
+                state: .unverified,
+                on: req
+            )
+        }
+        guard let (topic, hub) = try await req.client.get(URI(string: topic)).extractWebSubLinks() else {
+            throw HTTPResponseStatus.expectationFailed
+        }
+        return try await self.saveSubscription(
+            topic: topic,
+            hub: hub,
+            callback: req.generateCallbackURLString(),
+            state: .unverified,
+            on: req
+        )
+    }
+    
+    func request(_ req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
+        let subscribe = try await req.client.post(hub) { subscribeRequest in
+            return try subscribeRequest.content.encode(
+                SubscriptionRequest(
+                    callback: subscription.callback,
+                    topic: subscription.topic,
+                    verify: "sync",
+                    mode: .subscribe,
+                    leaseSeconds: try? req.query.get(at: "lease_seconds")
+                ), as: .urlEncodedForm
+            )
+        }
+        if subscribe.status != .accepted {
+            if let subscribeBody = subscribe.body {
+                return Response(status: .expectationFailed, body: .init(buffer: subscribeBody))
+            }
+            return Response(status: .expectationFailed)
+        }
+        return Response(status: .ok)
+    }
     
     func verification(_ verification: Subscription.Verification, success subscription: SubscriptionModel) -> Result<Subscription.Verification, Error> {
         subscription.state = .verified
