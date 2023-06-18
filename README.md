@@ -1,6 +1,6 @@
 # WebSubKit/WebSubSubscriber
 
-A WebSub Subscriber implementation written in Swift for usage with 💧 (Vapor)[https://github.com/vapor/vapor].
+A WebSub Subscriber implementation written in Swift for usage with 💧 [Vapor](https://github.com/vapor/vapor).
 
 ## 🗳️ Implemented Features
 
