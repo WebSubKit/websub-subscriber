@@ -30,7 +30,7 @@ A WebSub Subscriber implementation written in Swift for usage with 💧 [Vapor](
 * [x] 1xx: Requests a subscription with a specific `lease_seconds` (optional, hub may ignore)
 * [x] Callback URL is unique per subscription (should)
 * [x] Callback URL is an unguessable URL (should)
-* [ ] 1xx: Sends an unsubscription request
+* [x] 1xx: Sends an unsubscription request
 
 ### Distribution
 

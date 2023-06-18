@@ -146,7 +146,7 @@ fileprivate extension SubscriberRouteCollection {
                     callback: subscription.callback,
                     topic: subscription.topic,
                     verify: "sync",
-                    mode: .subscribe,
+                    mode: (try? req.query.get(at: "mode")) as SubscriptionRequest.Mode? ?? .subscribe,
                     leaseSeconds: try? req.query.get(at: "lease_seconds")
                 ), as: .urlEncodedForm
             )
