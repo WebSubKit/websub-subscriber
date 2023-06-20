@@ -100,12 +100,12 @@ extension SubscriberRouteCollection {
                 return .failure(HTTPResponseStatus.notFound)
             }
             if subscription.topic != verification.topic {
-                return self.verification(verification, failure: subscription)
+                return try await self.verification(verification, failure: subscription, on: req)
             }
             if [.unverified, .verified].contains(subscription.state) {
-                return self.verification(verification, success: subscription)
+                return try await self.verification(verification, success: subscription, on: req)
             } else {
-                return self.verification(verification, failure: subscription)
+                return try await self.verification(verification, failure: subscription, on: req)
             }
         } catch {
             return .failure(error)
@@ -160,19 +160,21 @@ fileprivate extension SubscriberRouteCollection {
         return Response(status: .ok)
     }
     
-    func verification(_ verification: Subscription.Verification, success subscription: SubscriptionModel) -> Result<Subscription.Verification, Error> {
+    func verification(_ verification: Subscription.Verification, success subscription: SubscriptionModel, on req: Request) async throws -> Result<Subscription.Verification, Error> {
         subscription.state = .verified
         subscription.leaseSeconds = verification.leaseSeconds
         if let unwrappedLeaseSeconds = verification.leaseSeconds {
             subscription.expiredAt = Calendar.current.date(byAdding: .second, value: unwrappedLeaseSeconds, to: Date())
         }
         subscription.lastSuccessfulVerificationAt = Date()
+        try await subscription.save(on: req.db)
         return .success(verification)
     }
     
-    func verification(_ verification: Subscription.Verification, failure subscription: SubscriptionModel) -> Result<Subscription.Verification, Error> {
+    func verification(_ verification: Subscription.Verification, failure subscription: SubscriptionModel, on req: Request) async throws -> Result<Subscription.Verification, Error> {
         subscription.state = .unverified
         subscription.lastUnsuccessfulVerificationAt = Date()
+        try await subscription.save(on: req.db)
         return .failure(HTTPResponseStatus.notFound)
     }
     
