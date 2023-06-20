@@ -50,7 +50,7 @@ To integrate `WebSubSubscriber` into your project, specify it in your `Package.s
 let package = Package(
     ...
     dependencies: [
-        .package(url: "https://github.com/WebSubKit/WebSubSubscriber.git", from: "0.3.0")
+        .package(url: "https://github.com/WebSubKit/web-sub-subscriber.git", from: "0.3.1"),
     ]
     ...
     targets: [
