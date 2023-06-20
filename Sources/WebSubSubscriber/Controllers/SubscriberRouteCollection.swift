@@ -128,7 +128,7 @@ fileprivate extension SubscriberRouteCollection {
             )
         }
         guard let (topic, hub) = try await req.client.get(URI(string: topic)).extractWebSubLinks() else {
-            throw HTTPResponseStatus.expectationFailed
+            throw HTTPResponseStatus.notFound
         }
         return try await self.saveSubscription(
             topic: topic,
@@ -153,9 +153,9 @@ fileprivate extension SubscriberRouteCollection {
         }
         if subscribe.status != .accepted {
             if let subscribeBody = subscribe.body {
-                return Response(status: .expectationFailed, body: .init(buffer: subscribeBody))
+                return Response(status: subscribe.status, body: .init(buffer: subscribeBody))
             }
-            return Response(status: .expectationFailed)
+            return Response(status: subscribe.status)
         }
         return Response(status: .ok)
     }
