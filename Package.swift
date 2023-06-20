@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "WebSubSubscriber",
+    name: "web-sub-subscriber",
     platforms: [
         .macOS(.v12)
     ],
