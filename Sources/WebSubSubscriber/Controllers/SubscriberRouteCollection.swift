@@ -143,11 +143,7 @@ extension SubscriberRouteCollection {
             if subscription.topic != verification.topic {
                 return try await self.verification(verification, failure: subscription, on: req)
             }
-            if [.unverified, .verified].contains(subscription.state) {
-                return try await self.verification(verification, success: subscription, on: req)
-            } else {
-                return try await self.verification(verification, failure: subscription, on: req)
-            }
+            return try await self.verification(verification, success: subscription, on: req)
         } catch {
             return .failure(error)
         }
