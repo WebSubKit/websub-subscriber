@@ -63,15 +63,35 @@ extension SubscriberRouteCollection {
     
     public func subscribe(req: Request) async throws -> Response {
         let requestedTopic: String = try req.query.get(at: "topic")
+        req.logger.info(
+        """
+            Attempting to subscribe topic: \(requestedTopic)
+        """
+        )
         let subscription = try await self.discover(requestedTopic, on: req)
         return try await self.request(req, subscription: subscription, to: URI(string: subscription.hub))
     }
     
     public func handle(req: Request) async throws -> Response {
+        req.logger.info(
+        """
+            Attempting to handle payload: \(req.body)
+        """
+        )
         switch try await req.validateSubscription() {
         case .success(let request):
+            req.logger.info(
+            """
+                Payload for validated subscription received: \(req.body)
+            """
+            )
             return try await self.payload(req: request)
         case .failure:
+            req.logger.info(
+            """
+                Payload rejected: \(req.body)
+            """
+            )
             return Response(status: .notAcceptable)
         }
     }
@@ -96,6 +116,14 @@ extension SubscriberRouteCollection {
     
     public func verify(_ verification: Subscription.Verification, on req: Request) async -> Result<Subscription.Verification, Error> {
         do {
+            req.logger.info(
+            """
+                A hub attempting to: \(verification.mode)
+                verification for topic: \(verification.topic)
+                with challenge: \(verification.challenge)
+                via callback: \(req.url.string)
+            """
+            )
             guard let subscription = try await req.findRelatedSubscription() else {
                 return .failure(HTTPResponseStatus.notFound)
             }
@@ -119,6 +147,11 @@ fileprivate extension SubscriberRouteCollection {
     
     func discover(_ topic: String, on req: Request) async throws -> Subscription {
         if let requestedHub: String = try req.query.get(at: "hub") {
+            req.logger.info(
+            """
+                Preferred hub requested by the user found: \(requestedHub)
+            """
+            )
             return try await self.saveSubscription(
                 topic: topic,
                 hub: requestedHub,
@@ -130,6 +163,11 @@ fileprivate extension SubscriberRouteCollection {
         guard let (topic, hub) = try await req.client.get(URI(string: topic)).extractWebSubLinks() else {
             throw HTTPResponseStatus.notFound
         }
+        req.logger.info(
+        """
+            Preferred hub advertised by the topic found: \(hub)
+        """
+        )
         return try await self.saveSubscription(
             topic: topic,
             hub: hub,
@@ -140,6 +178,12 @@ fileprivate extension SubscriberRouteCollection {
     }
     
     func request(_ req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
+        req.logger.info(
+        """
+            Attempting to subscribe topic: \(subscription.topic)
+            via hub: \(subscription.hub)
+        """
+        )
         let subscribe = try await req.client.post(hub) { subscribeRequest in
             return try subscribeRequest.content.encode(
                 SubscriptionRequest(
@@ -151,6 +195,11 @@ fileprivate extension SubscriberRouteCollection {
                 ), as: .urlEncodedForm
             )
         }
+        req.logger.info(
+        """
+            Hub responded to subscription request: \(subscribe)
+        """
+        )
         if subscribe.status != .accepted {
             if let subscribeBody = subscribe.body {
                 return Response(status: subscribe.status, body: .init(buffer: subscribeBody))
@@ -168,6 +217,11 @@ fileprivate extension SubscriberRouteCollection {
         }
         subscription.lastSuccessfulVerificationAt = Date()
         try await subscription.save(on: req.db)
+        req.logger.info(
+        """
+            Subscription verified: \(subscription)
+        """
+        )
         return .success(verification)
     }
     
@@ -175,6 +229,11 @@ fileprivate extension SubscriberRouteCollection {
         subscription.state = .unverified
         subscription.lastUnsuccessfulVerificationAt = Date()
         try await subscription.save(on: req.db)
+        req.logger.info(
+        """
+            Subscription not verified: \(subscription)
+        """
+        )
         return .failure(HTTPResponseStatus.notFound)
     }
     
