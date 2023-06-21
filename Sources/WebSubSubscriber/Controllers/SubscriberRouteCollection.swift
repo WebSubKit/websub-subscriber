@@ -189,11 +189,14 @@ fileprivate extension SubscriberRouteCollection {
     func unsubscribe(_ topic: String, to mode: Subscription.Verification.Mode, on req: Request) async throws -> Response {
         let hub: String = try req.query.get(at: "hub")
         let callback: String = try req.query.get(at: "callback")
-        let subscription = SubscriptionModel(
-            topic: topic,
-            hub: hub,
-            callback: callback,
-            state: .pendingUnsubscription
+        let subscription = (
+            try await req.findRelatedSubscription() ??
+            SubscriptionModel(
+                topic: topic,
+                hub: hub,
+                callback: callback,
+                state: .pendingUnsubscription
+            )
         )
         try await subscription.save(on: req.db)
         return try await self.request(to: mode, on: req, subscription: subscription, to: URI(string: hub))
