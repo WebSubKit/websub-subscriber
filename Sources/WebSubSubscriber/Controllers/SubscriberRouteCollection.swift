@@ -33,6 +33,8 @@ public protocol SubscriberRouteCollection: RouteCollection {
     
     var path: PathComponent { get }
     
+    func setup(routes: RoutesBuilder) throws
+    
     func subscribe(req: Request) async throws -> Response
     
     func handle(req: Request) async throws -> Response
@@ -51,6 +53,10 @@ public protocol SubscriberRouteCollection: RouteCollection {
 extension SubscriberRouteCollection {
     
     public func boot(routes: RoutesBuilder) throws {
+        try self.setup(routes: routes)
+    }
+    
+    public func setup(routes: RoutesBuilder) throws {
         let routesGroup = routes.grouped(path)
         routesGroup.get("subscribe", use: subscribe)
         routesGroup.group("callback") { routeBuilder in
