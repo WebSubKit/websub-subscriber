@@ -71,6 +71,9 @@ extension SubscriberRouteCollection {
     public func subscribe(req: Request) async throws -> Response {
         let requestedTopic: String = try req.query.get(at: "topic")
         let mode = (try? req.query.get(at: "mode")) as SubscriptionRequest.Mode? ?? .subscribe
+        if mode == .unsubscribe {
+            return try await self.unsubscribe(requestedTopic, to: mode, on: req)
+        }
         req.logger.info(
             """
             Attempting to \(mode) topic: \(requestedTopic)
@@ -135,10 +138,6 @@ extension SubscriberRouteCollection {
                 """
             )
             guard let subscription = try await req.findRelatedSubscription() else {
-                /// If the request is to unsubscribe a topic, just accept verification
-                if verification.mode == .unsubscribe {
-                    return .success(verification)
-                }
                 return .failure(HTTPResponseStatus.notFound)
             }
             if subscription.topic != verification.topic {
@@ -189,6 +188,19 @@ fileprivate extension SubscriberRouteCollection {
             state: .unverified,
             on: req
         )
+    }
+    
+    func unsubscribe(_ topic: String, to mode: Subscription.Verification.Mode, on req: Request) async throws -> Response {
+        let hub: String = try req.query.get(at: "hub")
+        let callback: String = try req.query.get(at: "callback")
+        let subscription = SubscriptionModel(
+            topic: topic,
+            hub: hub,
+            callback: callback,
+            state: .pendingUnsubscription
+        )
+        try await subscription.save(on: req.db)
+        return try await self.request(to: mode, on: req, subscription: subscription, to: URI(string: hub))
     }
     
     func request(to mode: Subscription.Verification.Mode, on req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
