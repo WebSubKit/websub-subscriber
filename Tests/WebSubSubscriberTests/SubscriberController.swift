@@ -30,7 +30,7 @@ struct SubscriberController: SubscriberRouteCollection {
     
     let path: PathComponent
     
-    func payload(req: Request) async throws -> Response {
+    func payload(for subscription: Subscription, on req: Request) async throws -> Response {
         return Response(status: .noContent)
     }
     

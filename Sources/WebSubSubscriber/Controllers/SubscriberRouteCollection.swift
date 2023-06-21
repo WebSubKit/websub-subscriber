@@ -37,7 +37,7 @@ public protocol SubscriberRouteCollection: RouteCollection {
     
     func handle(req: Request) async throws -> Response
     
-    func payload(req: Request) async throws -> Response
+    func payload(for subscription: Subscription, on req: Request) async throws -> Response
     
     func verify(req: Request) async throws -> Response
     
@@ -78,14 +78,15 @@ extension SubscriberRouteCollection {
             Attempting to handle payload: \(req.body)
         """
         )
-        switch try await req.validateSubscription() {
-        case .success(let request):
+        switch try await req.validSubscription() {
+        case .success(let subscription):
             req.logger.info(
             """
-                Payload for validated subscription received: \(req.body)
+                Payload for validated subscription: \(subscription)
+                received: \(req.body)
             """
             )
-            return try await self.payload(req: request)
+            return try await self.payload(for: subscription, on: req)
         case .failure:
             req.logger.info(
             """
@@ -294,34 +295,40 @@ fileprivate extension Request {
             .first()
     }
     
-    func validateSubscription() async throws -> Result<Request, Error> {
-        if try await self.hasValidHeaders() {
-            return .success(self)
+    func validSubscription() async throws -> Result<Subscription, Error> {
+        if let subscription = try await self.subscriptionFromHeaders() {
+            return .success(subscription)
         }
-        if try await self.hasValidContent() {
-            return .success(self)
+        if let subscription = try await self.subscriptionFromContent() {
+            return .success(subscription)
         }
         return .failure(HTTPResponseStatus.notAcceptable)
     }
     
-    func hasValidHeaders() async throws -> Bool {
+    func subscriptionFromHeaders() async throws -> Subscription? {
         guard let subscription0 = try await self.findRelatedSubscription() else {
-            return false
+            return nil
         }
         guard let subscription1 = self.headers.extractWebSubLinks() else {
-            return false
+            return nil
         }
-        return subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub
+        if subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub {
+            return subscription0
+        }
+        return nil
     }
     
-    func hasValidContent() async throws -> Bool {
+    func subscriptionFromContent() async throws -> Subscription? {
         guard let subscription0 = try await self.findRelatedSubscription() else {
-            return false
+            return nil
         }
         guard let subscription1 = self.body.string?.extractWebSubLinks() else {
-            return false
+            return nil
         }
-        return subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub
+        if subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub {
+            return subscription0
+        }
+        return nil
     }
     
     func generateCallbackURLString() -> String {
