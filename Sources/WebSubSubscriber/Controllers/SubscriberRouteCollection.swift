@@ -70,13 +70,14 @@ extension SubscriberRouteCollection {
     
     public func subscribe(req: Request) async throws -> Response {
         let requestedTopic: String = try req.query.get(at: "topic")
+        let mode = (try? req.query.get(at: "mode")) as SubscriptionRequest.Mode? ?? .subscribe
         req.logger.info(
             """
-            Attempting to subscribe topic: \(requestedTopic)
+            Attempting to \(mode) topic: \(requestedTopic)
             """
         )
         let subscription = try await self.discover(requestedTopic, on: req)
-        return try await self.request(req, subscription: subscription, to: URI(string: subscription.hub))
+        return try await self.request(to: mode, on: req, subscription: subscription, to: URI(string: subscription.hub))
     }
     
     public func handle(req: Request) async throws -> Response {
@@ -134,6 +135,10 @@ extension SubscriberRouteCollection {
                 """
             )
             guard let subscription = try await req.findRelatedSubscription() else {
+                /// If the request is to unsubscribe a topic, just accept verification
+                if verification.mode == .unsubscribe {
+                    return .success(verification)
+                }
                 return .failure(HTTPResponseStatus.notFound)
             }
             if subscription.topic != verification.topic {
@@ -186,10 +191,10 @@ fileprivate extension SubscriberRouteCollection {
         )
     }
     
-    func request(_ req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
+    func request(to mode: Subscription.Verification.Mode, on req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
         req.logger.info(
             """
-            Attempting to subscribe topic: \(subscription.topic)
+            Attempting to \(mode) topic: \(subscription.topic)
             via hub: \(subscription.hub)
             """
         )
@@ -199,14 +204,14 @@ fileprivate extension SubscriberRouteCollection {
                     callback: subscription.callback,
                     topic: subscription.topic,
                     verify: "sync",
-                    mode: (try? req.query.get(at: "mode")) as SubscriptionRequest.Mode? ?? .subscribe,
+                    mode: mode,
                     leaseSeconds: try? req.query.get(at: "lease_seconds")
                 ), as: .urlEncodedForm
             )
         }
         req.logger.info(
             """
-            Hub responded to subscription request: \(subscribe)
+            Hub responded to \(mode) request: \(subscribe)
             """
         )
         if subscribe.status != .accepted {
