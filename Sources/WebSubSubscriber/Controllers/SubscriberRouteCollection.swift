@@ -54,13 +54,13 @@ public protocol SubscriberRouteCollection:
 }
 
 
-extension SubscriberRouteCollection {
+public extension SubscriberRouteCollection {
     
-    public func boot(routes: RoutesBuilder) throws {
+    func boot(routes: RoutesBuilder) throws {
         try self.setup(routes: routes)
     }
     
-    public func setup(routes: RoutesBuilder, middlewares: [Middleware] = []) throws {
+    func setup(routes: RoutesBuilder, middlewares: [Middleware] = []) throws {
         let couldBeMiddlewaredRoute = routes.grouped(middlewares)
         couldBeMiddlewaredRoute.get("subscribe", use: subscribe)
         let routesGroup = routes.grouped(path)
@@ -72,7 +72,7 @@ extension SubscriberRouteCollection {
         }
     }
     
-    public func subscribe(req: Request) async throws -> Response {
+    func subscribe(req: Request) async throws -> Response {
         switch (
             Result { try req.query.decode(SubscribeRequest.self) }
         ) {
@@ -92,7 +92,7 @@ extension SubscriberRouteCollection {
         }
     }
     
-    public func handle(req: Request) async throws -> Response {
+    func handle(req: Request) async throws -> Response {
         req.logger.info(
             """
             Incoming request: \(req.id)
@@ -118,7 +118,7 @@ extension SubscriberRouteCollection {
         }
     }
     
-    public func verify(req: Request) async throws -> Response {
+    func verify(req: Request) async throws -> Response {
         switch (
             Result { try req.query.decode(SubscriptionVerificationRequest.self) }
         ) {
