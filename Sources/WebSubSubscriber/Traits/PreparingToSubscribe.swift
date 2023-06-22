@@ -1,5 +1,5 @@
 //
-//  SubscriberRouteCollection + Unsubscribe.swift
+//  PreparingToSubscribe.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,15 +25,28 @@
 import Vapor
 
 
-public extension SubscriberRouteCollection {
+public protocol PreparingToSubscribe {
     
-    func unsubscribe(_ subscribeRequest: SubscribeRequest, on req: Request) async throws -> Response {
-        guard let callback = subscribeRequest.callback else {
-            return try await ErrorResponse(
-                code: .badRequest,
-                message: "Callback URL is required when unsubscribing topic"
-            ).encodeResponse(status: .badRequest, for: req)
-        }
+    func subscribe(_ subscribeRequest: SubscribeRequest, on req: Request, then: Subscribing & Discovering) async throws -> Response
+    
+}
+
+
+public extension PreparingToSubscribe {
+    
+    func subscribe(_ subscribeRequest: SubscribeRequest, on req: Request, then: Subscribing & Discovering) async throws -> Response {
+        let subscription = try await then.discovering(
+            req.generateCallbackURLString(),
+            from: subscribeRequest,
+            on: req,
+            state: .pendingSubscription
+        )
+        return try await then.subscribing(
+            subscription,
+            mode: .subscribe,
+            via: URI(string: subscription.hub),
+            on: req
+        )
     }
     
 }

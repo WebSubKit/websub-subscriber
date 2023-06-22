@@ -62,6 +62,8 @@ public enum SubscriptionState: String {
     
     case verified
     
+    case pendingSubscription
+    
     case pendingUnsubscription
     
     case unsubscribed

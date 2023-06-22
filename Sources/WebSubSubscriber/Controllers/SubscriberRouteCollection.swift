@@ -29,7 +29,13 @@ import SwiftSoup
 import Vapor
 
 
-public protocol SubscriberRouteCollection: RouteCollection {
+public protocol SubscriberRouteCollection:
+        RouteCollection,
+        PreparingToSubscribe,
+        PreparingToUnsubscribe,
+        Subscribing,
+        Discovering
+    {
     
     var path: PathComponent { get }
     
@@ -76,9 +82,9 @@ extension SubscriberRouteCollection {
             let mode = request.mode ?? .subscribe
             switch mode {
             case .subscribe:
-                return try await self.subscribe(request, on: req)
+                return try await self.subscribe(request, on: req, then: self)
             case .unsubscribe:
-                break
+                return try await self.unsubscribe(request, on: req, then: self)
             }
         case .failure(let reason):
             return try await ErrorResponse(
@@ -159,86 +165,6 @@ extension SubscriberRouteCollection {
 
 extension SubscriberRouteCollection {
     
-    func discover(_ topic: String, on req: Request) async throws -> Subscription {
-        if let requestedHub: String = try req.query.get(at: "hub") {
-            req.logger.info(
-                """
-                Preferred hub requested by the user found: \(requestedHub)
-                """
-            )
-            return try await self.saveSubscription(
-                topic: topic,
-                hub: requestedHub,
-                callback: req.generateCallbackURLString(),
-                state: .unverified,
-                on: req
-            )
-        }
-        guard let (topic, hub) = try await req.client.get(URI(string: topic)).extractWebSubLinks() else {
-            throw HTTPResponseStatus.notFound
-        }
-        req.logger.info(
-            """
-            Preferred hub advertised by the topic found: \(hub)
-            """
-        )
-        return try await self.saveSubscription(
-            topic: topic,
-            hub: hub,
-            callback: req.generateCallbackURLString(),
-            state: .unverified,
-            on: req
-        )
-    }
-    
-    func unsubscribe(_ topic: String, to mode: Subscription.Verification.Mode, on req: Request) async throws -> Response {
-        let hub: String = try req.query.get(at: "hub")
-        let callback: String = try req.query.get(at: "callback")
-        let subscription = (
-            try await req.findRelatedSubscription() ??
-            SubscriptionModel(
-                topic: topic,
-                hub: hub,
-                callback: callback,
-                state: .pendingUnsubscription
-            )
-        )
-        try await subscription.save(on: req.db)
-        return try await self.request(to: mode, on: req, subscription: subscription, to: URI(string: hub))
-    }
-    
-    func request(to mode: Subscription.Verification.Mode, on req: Request, subscription: Subscription, to hub: URI) async throws -> Response {
-        req.logger.info(
-            """
-            Attempting to \(mode) topic: \(subscription.topic)
-            via hub: \(subscription.hub)
-            """
-        )
-        let subscribe = try await req.client.post(hub) { subscribeRequest in
-            return try subscribeRequest.content.encode(
-                SubscriptionRequest(
-                    callback: subscription.callback,
-                    topic: subscription.topic,
-                    verify: "sync",
-                    mode: mode,
-                    leaseSeconds: try? req.query.get(at: "lease_seconds")
-                ), as: .urlEncodedForm
-            )
-        }
-        req.logger.info(
-            """
-            Hub responded to \(mode) request: \(subscribe)
-            """
-        )
-        if subscribe.status != .accepted {
-            if let subscribeBody = subscribe.body {
-                return Response(status: subscribe.status, body: .init(buffer: subscribeBody))
-            }
-            return Response(status: subscribe.status)
-        }
-        return Response(status: .ok)
-    }
-    
     func verification(_ verification: Subscription.Verification, success subscription: SubscriptionModel, on req: Request) async throws -> Result<Subscription.Verification, Error> {
         subscription.state = .verified
         subscription.leaseSeconds = verification.leaseSeconds
@@ -267,6 +193,7 @@ extension SubscriberRouteCollection {
         return .failure(HTTPResponseStatus.notFound)
     }
     
+    @available(*, unavailable, renamed: "Subscriptions.create")
     func saveSubscription(
         topic: String,
         hub: String,

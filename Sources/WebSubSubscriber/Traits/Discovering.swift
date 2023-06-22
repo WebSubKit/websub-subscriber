@@ -1,5 +1,5 @@
 //
-//  SubscriberRouteCollection + Subscribe.swift
+//  Discovering.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,36 +25,28 @@
 import Vapor
 
 
-public extension SubscriberRouteCollection {
+public protocol Discovering {
     
-    func subscribe(_ subscribeRequest: SubscribeRequest, on req: Request) async throws -> Response {
-        let subscription = try await self.discover(subscribeRequest, on: req)
-        return try await self.request(
-            to: .subscribe,
-            on: req,
-            subscription: subscription,
-            to: URI(string: subscription.hub)
-        )
-    }
+    func discovering(_ callback: String, from subscribeRequest: SubscribeRequest, on req: Request, state: Subscription.State) async throws -> Subscription
     
 }
 
 
-fileprivate extension SubscriberRouteCollection {
+public extension Discovering {
     
-    func discover(_ subscribeRequest: SubscribeRequest, on req: Request) async throws -> Subscription {
+    func discovering(_ callback: String, from subscribeRequest: SubscribeRequest, on req: Request, state: Subscription.State) async throws -> Subscription {
         if let requestedHub: String = subscribeRequest.hub {
             req.logger.info(
                 """
                 Preferred hub requested by the user found: \(requestedHub)
                 """
             )
-            return try await self.saveSubscription(
+            return try await Subscriptions.create(
                 topic: subscribeRequest.topic,
                 hub: requestedHub,
-                callback: req.generateCallbackURLString(),
-                state: .unverified,
-                on: req
+                callback: callback,
+                state: state,
+                on: req.db
             )
         }
         guard let (topic, hub) = try await req.client.get(URI(string: subscribeRequest.topic)).extractWebSubLinks() else {
@@ -65,12 +57,12 @@ fileprivate extension SubscriberRouteCollection {
             Preferred hub advertised by the topic found: \(hub)
             """
         )
-        return try await self.saveSubscription(
+        return try await Subscriptions.create(
             topic: topic,
             hub: hub,
-            callback: req.generateCallbackURLString(),
-            state: .unverified,
-            on: req
+            callback: callback,
+            state: state,
+            on: req.db
         )
     }
     

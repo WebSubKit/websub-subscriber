@@ -86,3 +86,51 @@ public final class SubscriptionModel: Subscription, Model, Content {
     }
     
 }
+
+
+public var Subscriptions: SubscriptionModels {
+    return .init()
+}
+
+
+public final class SubscriptionModels {
+    
+    public init() { }
+    
+    public func create(
+        topic: String,
+        hub: String,
+        callback: String,
+        state: Subscription.State,
+        on db: Database
+    ) async throws -> SubscriptionModel {
+        let subscription = SubscriptionModel(
+            topic: topic,
+            hub: hub,
+            callback: callback,
+            state: state
+        )
+        try await subscription.save(on: db)
+        return subscription
+    }
+    
+    public func first(
+        topic: String? = nil,
+        hub: String? = nil,
+        callback: String? = nil,
+        on db: Database
+    ) async throws -> SubscriptionModel? {
+        let query = SubscriptionModel.query(on: db)
+        if let findTopic = topic {
+            query.filter(\.$topic, .equal, findTopic)
+        }
+        if let findHub = hub {
+            query.filter(\.$hub, .equal, findHub)
+        }
+        if let findCallback = callback {
+            query.filter(\.$callback, .equal, findCallback)
+        }
+        return try await query.first()
+    }
+    
+}
