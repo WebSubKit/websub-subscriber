@@ -133,7 +133,7 @@ public extension SubscriberRouteCollection {
             )
             guard let subscription = try await Subscriptions.first(
                 topic: request.topic,
-                callback: req.extractCallbackURLString(),
+                callback: req.urlPath,
                 on: req.db
             ) else {
                 return Response(status: .notFound)
@@ -169,7 +169,7 @@ extension Request {
     
     func findRelatedSubscription() async throws -> SubscriptionModel? {
         return try await SubscriptionModel.query(on: self.db)
-            .filter("callback", .equal, self.extractCallbackURLString())
+            .filter(\.$callback, .equal, self.urlPath)
             .first()
     }
     
@@ -213,7 +213,7 @@ extension Request {
         return "\(Environment.get("WEBSUB_HOST") ?? "")\(self.url.path.dropSuffix("/subscribe"))/callback/\(UUID().uuidString)"
     }
     
-    func extractCallbackURLString() -> String {
+    var urlPath: String {
         return "\(Environment.get("WEBSUB_HOST") ?? "")\(self.url.path)"
     }
     
