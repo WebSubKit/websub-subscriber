@@ -34,7 +34,9 @@ public protocol SubscriberRouteCollection:
         PreparingToSubscribe,
         PreparingToUnsubscribe,
         Subscribing,
-        Discovering
+        Discovering,
+        VerifyingToSubscribe,
+        VerifyingToUnsubscribe
     {
     
     var path: PathComponent { get }
@@ -48,10 +50,6 @@ public protocol SubscriberRouteCollection:
     func payload(for subscription: Subscription, on req: Request) async throws -> Response
     
     func verify(req: Request) async throws -> Response
-    
-    func verify(req: Request) async -> Result<Subscription.Verification, Error>
-    
-    func verify(_ verification: Subscription.Verification, on req: Request) async -> Result<Subscription.Verification, Error>
     
 }
 
@@ -121,121 +119,45 @@ extension SubscriberRouteCollection {
     }
     
     public func verify(req: Request) async throws -> Response {
-        return await handle(req, with: self.verify) { attempt in
-            Response(status: .accepted, body: .init(stringLiteral: attempt.challenge))
-        }
-    }
-    
-    public func verify(req: Request) async -> Result<Subscription.Verification, Error> {
         switch (
             Result { try req.query.decode(SubscriptionVerificationRequest.self) }
-                .mapError { _ in return HTTPResponseStatus.badRequest }
         ) {
-        case .success(let attempt):
-            return await self.verify(attempt, on: req)
-        case .failure(let reason):
-            return .failure(reason)
-        }
-    }
-    
-    public func verify(_ verification: Subscription.Verification, on req: Request) async -> Result<Subscription.Verification, Error> {
-        do {
+        case .success(let request):
             req.logger.info(
                 """
-                A hub attempting to: \(verification.mode)
-                verification for topic: \(verification.topic)
-                with challenge: \(verification.challenge)
-                via callback: \(req.url.string)
+                A hub attempting to: \(request.mode)
+                verification for topic: \(request.topic)
+                with challenge: \(request.challenge)
+                via callback: \(req.url.path)
                 """
             )
-            guard let subscription = try await req.findRelatedSubscription() else {
-                return .failure(HTTPResponseStatus.notFound)
+            guard let subscription = try await Subscriptions.first(
+                topic: request.topic,
+                callback: req.extractCallbackURLString(),
+                on: req.db
+            ) else {
+                return Response(status: .notFound)
             }
-            if subscription.topic != verification.topic {
-                return try await self.verification(verification, failure: subscription, on: req)
+            switch request.mode {
+            case .subscribe:
+                return try await self.verifySubscription(
+                    subscription,
+                    verification: request,
+                    on: req
+                )
+            case .unsubscribe:
+                return try await self.verifyUnsubscription(
+                    subscription,
+                    verification: request,
+                    on: req
+                )
             }
-            return try await self.verification(verification, success: subscription, on: req)
-        } catch {
-            return .failure(error)
+        case .failure(let reason):
+            return try await ErrorResponse(
+                code: .badRequest,
+                message: reason.localizedDescription
+            ).encodeResponse(status: .badRequest, for: req)
         }
-    }
-    
-}
-
-
-extension SubscriberRouteCollection {
-    
-    func verification(_ verification: Subscription.Verification, success subscription: SubscriptionModel, on req: Request) async throws -> Result<Subscription.Verification, Error> {
-        subscription.state = .verified
-        subscription.leaseSeconds = verification.leaseSeconds
-        if let unwrappedLeaseSeconds = verification.leaseSeconds {
-            subscription.expiredAt = Calendar.current.date(byAdding: .second, value: unwrappedLeaseSeconds, to: Date())
-        }
-        subscription.lastSuccessfulVerificationAt = Date()
-        try await subscription.save(on: req.db)
-        req.logger.info(
-            """
-            Subscription verified: \(subscription)
-            """
-        )
-        return .success(verification)
-    }
-    
-    func verification(_ verification: Subscription.Verification, failure subscription: SubscriptionModel, on req: Request) async throws -> Result<Subscription.Verification, Error> {
-        subscription.state = .unverified
-        subscription.lastUnsuccessfulVerificationAt = Date()
-        try await subscription.save(on: req.db)
-        req.logger.info(
-            """
-            Subscription not verified: \(subscription)
-            """
-        )
-        return .failure(HTTPResponseStatus.notFound)
-    }
-    
-    @available(*, unavailable, renamed: "Subscriptions.create")
-    func saveSubscription(
-        topic: String,
-        hub: String,
-        callback: String,
-        state: Subscription.State,
-        on req: Request
-    ) async throws -> Subscription {
-        let subscription = SubscriptionModel(
-            topic: topic,
-            hub: hub,
-            callback: callback,
-            state: state
-        )
-        try await subscription.save(on: req.db)
-        return subscription
-    }
-    
-}
-
-
-// MARK: - Verify Attempt Request
-
-fileprivate struct SubscriptionVerificationRequest: Subscription.Verification {
-    
-    let mode: Subscription.Verification.Mode
-    
-    let topic: String
-    
-    let challenge: String
-    
-    let leaseSeconds: Int?
-    
-}
-
-
-extension SubscriptionVerificationRequest: Codable {
-    
-    enum CodingKeys: String, CodingKey {
-        case mode = "hub.mode"
-        case topic = "hub.topic"
-        case challenge = "hub.challenge"
-        case leaseSeconds = "hub.lease_seconds"
     }
     
 }

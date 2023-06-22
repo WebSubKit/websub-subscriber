@@ -58,13 +58,11 @@ public protocol Subscription {
 
 public enum SubscriptionState: String {
     
-    case unverified
-    
-    case verified
-    
     case pendingSubscription
     
     case pendingUnsubscription
+    
+    case subscribed
     
     case unsubscribed
     
@@ -79,6 +77,8 @@ extension SubscriptionState: Codable { }
 public protocol SubscriptionVerification {
     
     typealias Mode = SubscriptionVerificationMode
+    
+    typealias Request = SubscriptionVerificationRequest
     
     var mode: Mode { get }
     
@@ -101,3 +101,28 @@ public enum SubscriptionVerificationMode: String {
 
 
 extension SubscriptionVerificationMode: Codable { }
+
+
+public struct SubscriptionVerificationRequest: Subscription.Verification {
+    
+    public let mode: Subscription.Verification.Mode
+    
+    public let topic: String
+    
+    public let challenge: String
+    
+    public let leaseSeconds: Int?
+    
+}
+
+
+extension SubscriptionVerificationRequest: Codable {
+    
+    enum CodingKeys: String, CodingKey {
+        case mode = "hub.mode"
+        case topic = "hub.topic"
+        case challenge = "hub.challenge"
+        case leaseSeconds = "hub.lease_seconds"
+    }
+    
+}
