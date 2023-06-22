@@ -78,6 +78,12 @@ public extension SubscriberRouteCollection {
         ) {
         case .success(let request):
             let mode = request.mode ?? .subscribe
+            req.logger.info(
+                """
+                A user attempting to: \(mode)
+                for topic: \(request.topic)
+                """
+            )
             switch mode {
             case .subscribe:
                 return try await self.subscribe(request, on: req, then: self)
