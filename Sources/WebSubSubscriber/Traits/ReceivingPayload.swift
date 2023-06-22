@@ -40,6 +40,14 @@ public extension ReceivingPayload {
         guard let parsed = self.parseTopicHub(from: payload) else {
             return Response(status: .notFound)
         }
+        payload.logger.debug(
+            """
+            Payload      -> topic: \(parsed.topic)
+            Payload      -> hub  : \(parsed.hub)
+            Subscription -> topic: \(subscription.topic)
+            Subscription -> hub  : \(subscription.hub)
+            """
+        )
         if !(parsed.topic == subscription.topic && parsed.hub == subscription.hub) {
             return Response(status: .notFound)
         }

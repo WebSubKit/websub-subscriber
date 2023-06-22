@@ -139,6 +139,7 @@ public extension SubscriberRouteCollection {
         req.logger.info(
             """
             Incoming request: \(req.id)
+            via callback: \(req.urlPath)
             attempting to handle payload: \(req.body)
             """
         )
