@@ -43,7 +43,7 @@ public extension Discovering {
             )
             return try await Subscriptions.create(
                 topic: subscribeRequest.topic,
-                hub: URI(string: requestedHub).host ?? "",
+                hub: requestedHub,
                 callback: callback,
                 state: state,
                 on: req.db
@@ -54,12 +54,12 @@ public extension Discovering {
         }
         req.logger.info(
             """
-            Preferred hub advertised by the topic found: \(hub)
+            Preferred hub advertised by the topic found: \(hub.string)
             """
         )
         return try await Subscriptions.create(
             topic: topic.string,
-            hub: hub.host ?? "",
+            hub: hub.string,
             callback: callback,
             state: state,
             on: req.db
