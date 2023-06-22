@@ -48,7 +48,8 @@ public extension ReceivingPayload {
             Subscription -> hub  : \(subscription.hub)
             """
         )
-        if !(parsed.topic == subscription.topic && parsed.hub == subscription.hub) {
+        let subsTopicHub = (topic: URI(string: subscription.topic), hub: URI(string: subscription.hub))
+        if !(parsed.topic.string == subsTopicHub.topic.string && parsed.hub.host == subsTopicHub.hub.host) {
             return Response(status: .notFound)
         }
         return try await self.payload(payload, from: subscription)
@@ -59,7 +60,7 @@ public extension ReceivingPayload {
 
 fileprivate extension ReceivingPayload {
     
-    func parseTopicHub(from payload: Request) -> (topic: String, hub: String)? {
+    func parseTopicHub(from payload: Request) -> (topic: URI, hub: URI)? {
         return payload.headers.extractWebSubLinks() ?? payload.body.string?.extractWebSubLinks()
     }
     

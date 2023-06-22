@@ -43,7 +43,7 @@ public extension Discovering {
             )
             return try await Subscriptions.create(
                 topic: subscribeRequest.topic,
-                hub: requestedHub,
+                hub: URI(string: requestedHub).host ?? "",
                 callback: callback,
                 state: state,
                 on: req.db
@@ -58,8 +58,8 @@ public extension Discovering {
             """
         )
         return try await Subscriptions.create(
-            topic: topic,
-            hub: hub,
+            topic: topic.string,
+            hub: hub.host ?? "",
             callback: callback,
             state: state,
             on: req.db

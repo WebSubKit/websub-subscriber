@@ -30,25 +30,25 @@ import Vapor
 
 protocol MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)?
+    func extractWebSubLinks() -> (topic: URI, hub: URI)?
     
 }
 
 
 extension String: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         return self.extractTopicFromHTML() ?? self.extractTopicFromXML()
     }
     
-    func extractTopicFromHTML() -> (topic: String, hub: String)? {
+    func extractTopicFromHTML() -> (topic: URI, hub: URI)? {
         let document = try? SwiftSoup.parse(self)
         return try? document?.head()?
             .select("link")
             .extractWebSubLinks()
     }
     
-    func extractTopicFromXML() -> (topic: String, hub: String)? {
+    func extractTopicFromXML() -> (topic: URI, hub: URI)? {
         return self.data(using: .utf8)?.extractWebSubLinks()
     }
     
@@ -57,7 +57,7 @@ extension String: MayHaveWebSubLinks {
 
 extension Data: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         switch FeedParser(data: self).parse() {
         case .success(let feed):
             return feed.atomFeed?.extractWebSubLinks() ?? feed.rssFeed?.extractWebSubLinks()
@@ -71,7 +71,7 @@ extension Data: MayHaveWebSubLinks {
 
 extension AtomFeed: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         return self.links?.extractWebSubLinks()
     }
     
@@ -80,7 +80,7 @@ extension AtomFeed: MayHaveWebSubLinks {
 
 extension RSSFeed: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         return self.atom?.links?.extractWebSubLinks()
     }
     
@@ -88,7 +88,7 @@ extension RSSFeed: MayHaveWebSubLinks {
 
 extension ClientResponse: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         return self.headers.extractWebSubLinks() ?? self.bodyString?.extractWebSubLinks()
     }
     
@@ -104,7 +104,7 @@ extension ClientResponse: MayHaveWebSubLinks {
 
 extension HTTPHeaders: MayHaveWebSubLinks {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         return self.links?.extractWebSubLinks()
     }
     
@@ -115,7 +115,7 @@ extension HTTPHeaders: MayHaveWebSubLinks {
 
 fileprivate extension Sequence where Element == SwiftSoup.Element {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         guard
             let topic = try? (
                 self.first { element in (try? element.attr("rel") == "self") ?? false }?.attr("href")
@@ -126,14 +126,14 @@ fileprivate extension Sequence where Element == SwiftSoup.Element {
         else {
             return nil
         }
-        return (topic: topic, hub: hub)
+        return (topic: URI(string: topic), hub: URI(string: hub))
     }
     
 }
 
 fileprivate extension Sequence where Element == AtomFeedLink {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         guard
             let topic = (
                 self.first { link in link.attributes?.rel == "self" }?.attributes?.href
@@ -144,7 +144,7 @@ fileprivate extension Sequence where Element == AtomFeedLink {
         else {
             return nil
         }
-        return (topic: topic, hub: hub)
+        return (topic: URI(string: topic), hub: URI(string: hub))
     }
     
 }
@@ -152,7 +152,7 @@ fileprivate extension Sequence where Element == AtomFeedLink {
 
 fileprivate extension Sequence where Element == HTTPHeaders.Link {
     
-    func extractWebSubLinks() -> (topic: String, hub: String)? {
+    func extractWebSubLinks() -> (topic: URI, hub: URI)? {
         guard
             let topic = (
                 self.first { link in link.relation.rawValue == "self" }?.uri
@@ -163,7 +163,7 @@ fileprivate extension Sequence where Element == HTTPHeaders.Link {
         else {
             return nil
         }
-        return (topic: topic, hub: hub)
+        return (topic: URI(string: topic), hub: URI(string: hub))
     }
     
 }
