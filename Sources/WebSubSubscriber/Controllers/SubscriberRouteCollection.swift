@@ -22,10 +22,6 @@
 //  SOFTWARE.
 //
 
-import FeedKit
-import FluentKit
-import Foundation
-import SwiftSoup
 import Vapor
 
 
@@ -36,7 +32,8 @@ public protocol SubscriberRouteCollection:
         Subscribing,
         Discovering,
         VerifyingToSubscribe,
-        VerifyingToUnsubscribe
+        VerifyingToUnsubscribe,
+        ReceivingPayload
     {
     
     var path: PathComponent { get }
@@ -45,11 +42,9 @@ public protocol SubscriberRouteCollection:
     
     func subscribe(req: Request) async throws -> Response
     
-    func handle(req: Request) async throws -> Response
-    
-    func payload(for subscription: Subscription, on req: Request) async throws -> Response
-    
     func verify(req: Request) async throws -> Response
+    
+    func receiving(req: Request) async throws -> Response
     
 }
 
@@ -67,7 +62,7 @@ public extension SubscriberRouteCollection {
         routesGroup.group("callback") { routeBuilder in
             routeBuilder.group(":id") { subBuilder in
                 subBuilder.get(use: verify)
-                subBuilder.post(use: handle)
+                subBuilder.post(use: receiving)
             }
         }
     }
@@ -95,32 +90,6 @@ public extension SubscriberRouteCollection {
                 code: .badRequest,
                 message: reason.localizedDescription
             ).encodeResponse(status: .badRequest, for: req)
-        }
-    }
-    
-    func handle(req: Request) async throws -> Response {
-        req.logger.info(
-            """
-            Incoming request: \(req.id)
-            attempting to handle payload: \(req.body)
-            """
-        )
-        switch try await req.validSubscription() {
-        case .success(let subscription):
-            req.logger.info(
-                """
-                Payload for validated subscription: \(subscription)
-                from request: \(req.id)
-                """
-            )
-            return try await self.payload(for: subscription, on: req)
-        case .failure:
-            req.logger.info(
-                """
-                Payload rejected from request: \(req.id)
-                """
-            )
-            return Response(status: .notAcceptable)
         }
     }
     
@@ -166,54 +135,28 @@ public extension SubscriberRouteCollection {
         }
     }
     
+    func receiving(req: Request) async throws -> Response {
+        req.logger.info(
+            """
+            Incoming request: \(req.id)
+            attempting to handle payload: \(req.body)
+            """
+        )
+        guard let subscription = try await Subscriptions.first(
+            callback: req.urlPath,
+            on: req.db
+        ) else {
+            return Response(status: .notFound)
+        }
+        return try await self.receiving(req, from: subscription)
+    }
+    
 }
 
 
 // MARK: - Utilities Extension
 
 extension Request {
-    
-    func findRelatedSubscription() async throws -> SubscriptionModel? {
-        return try await SubscriptionModel.query(on: self.db)
-            .filter(\.$callback, .equal, self.urlPath)
-            .first()
-    }
-    
-    func validSubscription() async throws -> Result<Subscription, Error> {
-        if let subscription = try await self.subscriptionFromHeaders() {
-            return .success(subscription)
-        }
-        if let subscription = try await self.subscriptionFromContent() {
-            return .success(subscription)
-        }
-        return .failure(HTTPResponseStatus.notAcceptable)
-    }
-    
-    func subscriptionFromHeaders() async throws -> Subscription? {
-        guard let subscription0 = try await self.findRelatedSubscription() else {
-            return nil
-        }
-        guard let subscription1 = self.headers.extractWebSubLinks() else {
-            return nil
-        }
-        if subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub {
-            return subscription0
-        }
-        return nil
-    }
-    
-    func subscriptionFromContent() async throws -> Subscription? {
-        guard let subscription0 = try await self.findRelatedSubscription() else {
-            return nil
-        }
-        guard let subscription1 = self.body.string?.extractWebSubLinks() else {
-            return nil
-        }
-        if subscription0.topic == subscription1.topic && subscription0.hub == subscription1.hub {
-            return subscription0
-        }
-        return nil
-    }
     
     func generateCallbackURLString() -> String {
         return "\(Environment.get("WEBSUB_HOST") ?? "")\(self.url.path.dropSuffix("/subscribe"))/callback/\(UUID().uuidString)"

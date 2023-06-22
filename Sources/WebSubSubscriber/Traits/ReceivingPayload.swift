@@ -1,6 +1,6 @@
 //
-//  SubscriberController.swift
-//  
+//  ReceivingPayload.swift
+//
 //  Copyright (c) 2023 WebSubKit Contributors
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,19 +23,36 @@
 //
 
 import Vapor
-import WebSubSubscriber
 
 
-struct SubscriberController: SubscriberRouteCollection {
+public protocol ReceivingPayload {
     
-    let path: PathComponent
+    func receiving(_ payload: Request, from subscription: SubscriptionModel) async throws -> Response
     
-    func payload(_ payload: Request, from subscription: SubscriptionModel) async throws -> Response {
-        return Response(status: .noContent)
+    func payload(_ payload: Request, from subscription: SubscriptionModel) async throws -> Response
+    
+}
+
+
+public extension ReceivingPayload {
+    
+    func receiving(_ payload: Request, from subscription: SubscriptionModel) async throws -> Response {
+        guard let parsed = self.parseTopicHub(from: payload) else {
+            return Response(status: .notFound)
+        }
+        if !(parsed.topic == subscription.topic && parsed.hub == subscription.hub) {
+            return Response(status: .notFound)
+        }
+        return try await self.payload(payload, from: subscription)
     }
     
-    init(_ path: PathComponent) {
-        self.path = path
+}
+
+
+fileprivate extension ReceivingPayload {
+    
+    func parseTopicHub(from payload: Request) -> (topic: String, hub: String)? {
+        return payload.headers.extractWebSubLinks() ?? payload.body.string?.extractWebSubLinks()
     }
     
 }
