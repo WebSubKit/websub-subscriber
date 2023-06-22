@@ -69,18 +69,23 @@ extension SubscriberRouteCollection {
     }
     
     public func subscribe(req: Request) async throws -> Response {
-        let requestedTopic: String = try req.query.get(at: "topic")
-        let mode = (try? req.query.get(at: "mode")) as SubscriptionRequest.Mode? ?? .subscribe
-        if mode == .unsubscribe {
-            return try await self.unsubscribe(requestedTopic, to: mode, on: req)
+        switch (
+            Result { try req.query.decode(SubscribeRequest.self) }
+        ) {
+        case .success(let request):
+            let mode = request.mode ?? .subscribe
+            switch mode {
+            case .subscribe:
+                return try await self.subscribe(request, on: req)
+            case .unsubscribe:
+                break
+            }
+        case .failure(let reason):
+            return try await ErrorResponse(
+                code: .badRequest,
+                message: reason.localizedDescription
+            ).encodeResponse(status: .badRequest, for: req)
         }
-        req.logger.info(
-            """
-            Attempting to \(mode) topic: \(requestedTopic)
-            """
-        )
-        let subscription = try await self.discover(requestedTopic, on: req)
-        return try await self.request(to: mode, on: req, subscription: subscription, to: URI(string: subscription.hub))
     }
     
     public func handle(req: Request) async throws -> Response {
@@ -152,7 +157,7 @@ extension SubscriberRouteCollection {
 }
 
 
-fileprivate extension SubscriberRouteCollection {
+extension SubscriberRouteCollection {
     
     func discover(_ topic: String, on req: Request) async throws -> Subscription {
         if let requestedHub: String = try req.query.get(at: "hub") {
@@ -311,7 +316,7 @@ extension SubscriptionVerificationRequest: Codable {
 
 // MARK: - Utilities Extension
 
-fileprivate extension Request {
+extension Request {
     
     func findRelatedSubscription() async throws -> SubscriptionModel? {
         return try await SubscriptionModel.query(on: self.db)
