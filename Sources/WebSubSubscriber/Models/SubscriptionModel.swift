@@ -102,7 +102,7 @@ public final class SubscriptionModels {
         hub: String,
         callback: String,
         state: Subscription.State,
-        leaseSeconds: Int?,
+        leaseSeconds: Int? = nil,
         on db: Database
     ) async throws -> SubscriptionModel {
         let subscription = SubscriptionModel(

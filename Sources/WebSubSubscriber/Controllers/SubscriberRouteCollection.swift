@@ -27,10 +27,7 @@ import Vapor
 
 public protocol SubscriberRouteCollection:
         RouteCollection,
-        PreparingToSubscribe,
-        PreparingToUnsubscribe,
         Subscribing,
-        Discovering,
         VerifyingToSubscribe,
         VerifyingToUnsubscribe,
         ReceivingPayload
@@ -68,29 +65,14 @@ public extension SubscriberRouteCollection {
     }
     
     func subscribe(req: Request) async throws -> Response {
-        switch (
-            Result { try req.query.decode(SubscribeRequest.self) }
-        ) {
-        case .success(let request):
-            let mode = request.mode ?? .subscribe
-            req.logger.info(
-                """
-                A user attempting to: \(mode)
-                for topic: \(request.topic)
-                """
+        return try await SubscribeRequest(from: req).parse(on: req, then: { subscription, mode in
+            return try await self.subscribing(
+                subscription,
+                mode: mode,
+                via: URI(string: subscription.hub),
+                on: req
             )
-            switch mode {
-            case .subscribe:
-                return try await self.subscribe(request, on: req, then: self)
-            case .unsubscribe:
-                return try await self.unsubscribe(request, on: req, then: self)
-            }
-        case .failure(let reason):
-            return try await ErrorResponse(
-                code: .badRequest,
-                message: reason.localizedDescription
-            ).encodeResponse(status: .badRequest, for: req)
-        }
+        })
     }
     
     func verify(req: Request) async throws -> Response {
