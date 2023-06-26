@@ -53,6 +53,14 @@ extension VerifyRequestUseCases: RequestHandler {
                 return .success(challenge)
             }
         } catch {
+            req.logger.error(
+                """
+                Validation request failed because (probably) internal server error
+                request.id   : \(req.id)
+                callback     : \(req.urlPath)
+                err. message : \(error.localizedDescription)
+                """
+            )
             return .failure(
                 ErrorResponse(
                     code: .internalServerError,

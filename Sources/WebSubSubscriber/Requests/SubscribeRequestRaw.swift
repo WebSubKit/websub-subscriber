@@ -62,6 +62,15 @@ extension SubscribeRequestRaw: RequestHandler {
         switch mode {
         case .subscribe:
             if let hub = self.hub {
+                req.logger.info(
+                    """
+                    Received \(mode) request, with preferred hub
+                    request.id   : \(req.id)
+                    topic        : \(self.topic)
+                    hub          : \(hub)
+                    leaseSeconds : \(String(describing: self.leaseSeconds))
+                    """
+                )
                 return .success(
                     .subscribeWithPreferredHub(
                         topic: self.topic,
@@ -71,6 +80,14 @@ extension SubscribeRequestRaw: RequestHandler {
                     )
                 )
             }
+            req.logger.info(
+                """
+                Received \(mode) request, with no preferred hub
+                request.id   : \(req.id)
+                topic        : \(self.topic)
+                leaseSeconds : \(String(describing: self.leaseSeconds))
+                """
+            )
             return .success(
                 .subscribeWithNoPreferredHub(
                     topic: self.topic,
@@ -80,6 +97,12 @@ extension SubscribeRequestRaw: RequestHandler {
             )
         case .unsubscribe:
             guard let callback = self.callback else {
+                req.logger.error(
+                    """
+                    Received \(mode) request, with error: Callback should be present on unsubscribe mode
+                    request.id   : \(req.id)
+                    """
+                )
                 return .failure(
                     ErrorResponse(
                         code: .badRequest,
@@ -87,6 +110,14 @@ extension SubscribeRequestRaw: RequestHandler {
                     )
                 )
             }
+            req.logger.info(
+                """
+                Received \(mode) request
+                request.id   : \(req.id)
+                topic        : \(self.topic)
+                callback     : \(callback)
+                """
+            )
             return .success(
                 .unsubscribe(
                     topic: self.topic,

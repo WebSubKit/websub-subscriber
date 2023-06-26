@@ -79,6 +79,14 @@ extension SubscribeRequestUseCases: RequestHandler {
                     on: req.db
                 ) {
                     if subscription.topic != topic {
+                        req.logger.error(
+                            """
+                            Received unsubscribe request, with error: Invalid topic
+                            request.id   : \(req.id)
+                            topic on db  : \(subscription.topic)
+                            topic on req : \(topic)
+                            """
+                        )
                         return .failure(
                             ErrorResponse(
                                 code: .notFound,
@@ -105,6 +113,13 @@ extension SubscribeRequestUseCases: RequestHandler {
                 )
             }
         } catch {
+            req.logger.error(
+                """
+                Request throwed errors
+                request.id   : \(req.id)
+                err. message : \(error.localizedDescription)
+                """
+            )
             return .failure(
                 ErrorResponse(
                     code: .badRequest,

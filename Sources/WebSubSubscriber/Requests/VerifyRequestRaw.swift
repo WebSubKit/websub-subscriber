@@ -53,12 +53,30 @@ extension VerifyRequestRaw: RequestHandler {
     public typealias ResultType = VerifyRequestUseCases
     
     public func handle(on req: Request) async -> Result<VerifyRequestUseCases, ErrorResponse> {
+        req.logger.info(
+            """
+            Validation for \(mode) request received
+            request.id   : \(req.id)
+            topic        : \(self.topic)
+            callback     : \(req.urlPath)
+            leaseSeconds : \(String(describing: self.leaseSeconds))
+            """
+        )
         do {
             guard let subscription = try await Subscriptions.first(
                 topic: self.topic,
                 callback: req.urlPath,
                 on: req.db
             ) else {
+                req.logger.error(
+                    """
+                    Validation for \(mode) request failed because subscription is not found
+                    request.id   : \(req.id)
+                    topic        : \(self.topic)
+                    callback     : \(req.urlPath)
+                    leaseSeconds : \(String(describing: self.leaseSeconds))
+                    """
+                )
                 throw HTTPResponseStatus.notFound
             }
             if self.isValid(for: subscription.state) {
@@ -80,6 +98,15 @@ extension VerifyRequestRaw: RequestHandler {
                     )
                 }
             }
+            req.logger.error(
+                """
+                Validation for \(mode) request failed because subscription is not valid
+                request.id   : \(req.id)
+                topic        : \(self.topic)
+                callback     : \(req.urlPath)
+                leaseSeconds : \(String(describing: self.leaseSeconds))
+                """
+            )
             subscription.lastUnsuccessfulVerificationAt = Date()
             try await subscription.save(on: req.db)
             throw HTTPResponseStatus.notFound
