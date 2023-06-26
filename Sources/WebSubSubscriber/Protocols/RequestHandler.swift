@@ -31,17 +31,17 @@ public protocol RequestHandler {
     
     func handle(on req: Request) async -> Result<ResultType, ErrorResponse>
     
-    func handle(on req: Request, then: @escaping(_ handled: ResultType) async throws -> Response) async throws -> Response
+    func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response
     
 }
 
 
 public extension RequestHandler {
     
-    func handle(on req: Request, then: @escaping(_ handled: ResultType) async throws -> Response) async throws -> Response {
+    func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response {
         switch await self.handle(on: req) {
         case .success(let handled):
-            return try await then(handled)
+            return try await then(req, handled)
         case .failure(let reason):
             return try await reason.encodeResponse(for: req)
         }

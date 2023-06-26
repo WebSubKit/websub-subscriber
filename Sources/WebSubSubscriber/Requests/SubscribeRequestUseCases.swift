@@ -1,5 +1,5 @@
 //
-//  SubscribeRequest.swift
+//  SubscribeRequestUseCases.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -26,7 +26,7 @@ import Fluent
 import Vapor
 
 
-public enum SubscribeRequest {
+public enum SubscribeRequestUseCases {
     
     case subscribeWithNoPreferredHub(topic: String, leaseSeconds: Int?, req: Request)
     
@@ -37,7 +37,7 @@ public enum SubscribeRequest {
 }
 
 
-extension SubscribeRequest: RequestHandler {
+extension SubscribeRequestUseCases: RequestHandler {
     
     public typealias ResultType = (SubscriptionMode, any Subscription & Model)
     

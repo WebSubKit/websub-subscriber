@@ -63,17 +63,7 @@ public extension SubscriberRouteCollection {
     }
     
     func subscribe(req: Request) async throws -> Response {
-        return try await req.query.decode(SubscribeRequestRaw.self)
-            .handle(on: req, then: { request in
-                return try await request.handle(on: req, then: { mode, subscription in
-                    return try await self.subscribing(
-                        subscription,
-                        mode: mode,
-                        via: URI(string: subscription.hub),
-                        on: req
-                    )
-                })
-            })
+        return try await self.subscribe(req: req)
     }
     
     func verify(req: Request) async throws -> Response {

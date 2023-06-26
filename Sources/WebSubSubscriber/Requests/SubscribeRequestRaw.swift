@@ -55,9 +55,9 @@ extension SubscribeRequestRaw: Content { }
 
 extension SubscribeRequestRaw: RequestHandler {
     
-    public typealias ResultType = SubscribeRequest
+    public typealias ResultType = SubscribeRequestUseCases
     
-    public func handle(on req: Request) async -> Result<SubscribeRequest, ErrorResponse> {
+    public func handle(on req: Request) async -> Result<SubscribeRequestUseCases, ErrorResponse> {
         let mode = self.mode ?? .subscribe
         switch mode {
         case .subscribe:
