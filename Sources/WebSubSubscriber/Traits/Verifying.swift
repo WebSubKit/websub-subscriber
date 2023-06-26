@@ -1,5 +1,5 @@
 //
-//  VerifyRequest.swift
+//  Verifying.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -22,13 +22,33 @@
 //  SOFTWARE.
 //
 
+import Fluent
 import Vapor
 
 
-public enum VerifyRequest {
+public protocol Verifying {
     
-    case verify(mode: SubscriptionMode, subscription: SubscriptionModel, challenge: String, leaseSeconds: Int?, req: Request)
+    func verifying(from request: Request) async throws -> Response
     
-    case failure(reason: ErrorResponse, req: Request)
+    func verifying(from request: Request, with useCase: VerifyRequestUseCases) async throws -> Response
+    
+    func verifying(from request: Request, with challenge: String) async throws -> Response
+    
+}
+
+
+public extension Verifying {
+    
+    func verifying(from request: Request) async throws -> Response {
+        return try await request.query.decode(VerifyRequestRaw.self).handle(on: request, then: self.verifying)
+    }
+    
+    func verifying(from request: Request, with useCase: VerifyRequestUseCases) async throws -> Response {
+        return try await useCase.handle(on: request, then: self.verifying)
+    }
+    
+    func verifying(from request: Request, with challenge: String) async throws -> Response {
+        return try await challenge.encodeResponse(status: .accepted, for: request)
+    }
     
 }

@@ -22,6 +22,7 @@
 //  SOFTWARE.
 //
 
+import Fluent
 import Foundation
 
 
@@ -50,6 +51,10 @@ public protocol Subscription {
     var lastUnsuccessfulVerificationAt: Date? { get }
     
     var lastReceivedContentAt: Date? { get }
+    
+    func verify(_ state: Subscription.State, on db: Database) async throws
+    
+    func updateLeaseSeconds(_ leaseSeconds: Int, on db: Database) async throws
     
 }
 

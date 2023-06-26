@@ -85,6 +85,18 @@ public final class SubscriptionModel: Subscription, Model, Content {
         self.lastReceivedContentAt = lastReceivedContentAt
     }
     
+    public func verify(_ state: SubscriptionState, on db: Database) async throws {
+        self.state = state
+        self.lastSuccessfulVerificationAt = Date()
+        try await self.save(on: db)
+    }
+    
+    public func updateLeaseSeconds(_ leaseSeconds: Int, on db: Database) async throws {
+        self.leaseSeconds = leaseSeconds
+        self.expiredAt = Calendar.current.date(byAdding: .second, value: leaseSeconds, to: Date())
+        try await self.save(on: db)
+    }
+    
 }
 
 
