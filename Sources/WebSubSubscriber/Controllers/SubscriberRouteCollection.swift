@@ -29,7 +29,7 @@ public protocol SubscriberRouteCollection:
         RouteCollection,
         Subscribing,
         Verifying,
-        ReceivingPayload
+        Receiving
     {
     
     var path: PathComponent { get }
@@ -39,8 +39,6 @@ public protocol SubscriberRouteCollection:
     func subscribe(req: Request) async throws -> Response
     
     func verify(req: Request) async throws -> Response
-    
-    func receiving(req: Request) async throws -> Response
     
 }
 
@@ -58,7 +56,7 @@ public extension SubscriberRouteCollection {
         routesGroup.group("callback") { routeBuilder in
             routeBuilder.group(":id") { subBuilder in
                 subBuilder.get(use: verify)
-                subBuilder.post(use: receiving)
+                subBuilder.post(use: receive)
             }
         }
     }
@@ -71,21 +69,8 @@ public extension SubscriberRouteCollection {
         return try await self.verifying(from: req)
     }
     
-    func receiving(req: Request) async throws -> Response {
-        req.logger.info(
-            """
-            Incoming request: \(req.id)
-            via callback: \(req.urlPath)
-            attempting to handle payload: \(req.body)
-            """
-        )
-        guard let subscription = try await Subscriptions.first(
-            callback: req.urlPath,
-            on: req.db
-        ) else {
-            return Response(status: .notFound)
-        }
-        return try await self.receiving(req, from: subscription)
+    func receive(req: Request) async throws -> Response {
+        return try await self.receiving(from: req)
     }
     
 }

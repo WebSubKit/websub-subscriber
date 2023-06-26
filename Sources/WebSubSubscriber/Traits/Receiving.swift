@@ -1,6 +1,6 @@
 //
-//  SubscriberController.swift
-//  
+//  Receiving.swift
+//
 //  Copyright (c) 2023 WebSubKit Contributors
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,19 +24,21 @@
 
 import Fluent
 import Vapor
-import WebSubSubscriber
 
 
-struct SubscriberController: SubscriberRouteCollection {
+public protocol Receiving {
     
-    let path: PathComponent
+    func receiving(from request: Request) async throws -> Response
     
-    init(_ path: PathComponent) {
-        self.path = path
-    }
+    func receiving(from request: Request, received: (validPayload: Request, subscription: any Subscription & Model)) async throws -> Response
     
-    func receiving(from request: Request, received: (validPayload: Request, subscription: any Subscription & Model)) async throws -> Response {
-        return Response(status: .noContent)
+}
+
+
+public extension Receiving {
+    
+    func receiving(from request: Request) async throws -> Response {
+        try await ReceivePayloadUseCases(from: request).handle(on: request, then: self.receiving)
     }
     
 }
