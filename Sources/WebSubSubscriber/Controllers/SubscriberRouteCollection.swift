@@ -63,40 +63,48 @@ public extension SubscriberRouteCollection {
     }
     
     func subscribe(req: Request) async throws -> Response {
-        return try await SubscribeRequest(from: req).parse(on: req, then: { subscription, mode in
-            return try await self.subscribing(
-                subscription,
-                mode: mode,
-                via: URI(string: subscription.hub),
-                on: req
+        return try await SubscribeRequest(from: req)
+            .parse(
+                on: req,
+                then: { subscription, mode in
+                    return try await self.subscribing(
+                        subscription,
+                        mode: mode,
+                        via: URI(string: subscription.hub),
+                        on: req
+                    )
+                }
             )
-        })
     }
     
     func verify(req: Request) async throws -> Response {
-        return try await VerifyRequest(from: req).parse(on: req, then: { subscription, mode, challenge, leaseSeconds in
-            switch mode {
-            case .subscribe:
-                subscription.state = .subscribed
-                subscription.lastSuccessfulVerificationAt = Date()
-                if let withLeaseSeconds = leaseSeconds {
-                    subscription.expiredAt = Calendar.current.date(byAdding: .second, value: withLeaseSeconds, to: Date())
+        return try await VerifyRequest(from: req)
+            .parse(
+                on: req,
+                then: { subscription, mode, challenge, leaseSeconds in
+                    switch mode {
+                    case .subscribe:
+                        subscription.state = .subscribed
+                        subscription.lastSuccessfulVerificationAt = Date()
+                        if let withLeaseSeconds = leaseSeconds {
+                            subscription.expiredAt = Calendar.current.date(byAdding: .second, value: withLeaseSeconds, to: Date())
+                        }
+                        try await subscription.save(on: req.db)
+                        return Response(
+                            status: .accepted,
+                            body: .init(stringLiteral: challenge)
+                        )
+                    case .unsubscribe:
+                        subscription.state = .unsubscribed
+                        subscription.lastSuccessfulVerificationAt = Date()
+                        try await subscription.save(on: req.db)
+                        return Response(
+                            status: .accepted,
+                            body: .init(stringLiteral: challenge)
+                        )
+                    }
                 }
-                try await subscription.save(on: req.db)
-                return Response(
-                    status: .accepted,
-                    body: .init(stringLiteral: challenge)
-                )
-            case .unsubscribe:
-                subscription.state = .unsubscribed
-                subscription.lastSuccessfulVerificationAt = Date()
-                try await subscription.save(on: req.db)
-                return Response(
-                    status: .accepted,
-                    body: .init(stringLiteral: challenge)
-                )
-            }
-        })
+            )
     }
     
     func receiving(req: Request) async throws -> Response {

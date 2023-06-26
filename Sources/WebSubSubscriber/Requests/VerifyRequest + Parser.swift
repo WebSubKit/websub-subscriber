@@ -43,7 +43,7 @@ extension VerifyRequest: RequestParser {
                     self = .failure(
                         reason: ErrorResponse(
                             code: .notFound,
-                            message: "Not found"
+                            message: "Subscription not found"
                         ),
                         req: req
                     )
@@ -63,8 +63,8 @@ extension VerifyRequest: RequestParser {
                 try await subscription.save(on: req.db)
                 self = .failure(
                     reason: ErrorResponse(
-                        code: .notFound,
-                        message: "Not found"
+                        code: .badRequest,
+                        message: "Request is not valid for subscription's state"
                     ),
                     req: req
                 )
@@ -92,8 +92,16 @@ extension VerifyRequest: RequestParser {
         switch self {
         case .verify(let mode, let subscription, let challenge, let leaseSeconds, _):
             return .success((subscription, mode, challenge, leaseSeconds))
-        case .failure(let reason, _):
-            return .failure(reason)
+        case .failure(let reason, let req):
+            if req.application.environment == .testing {
+                return .failure(reason)
+            }
+            return .failure(
+                ErrorResponse(
+                    code: .notFound,
+                    message: "Not found"
+                )
+            )
         }
     }
     

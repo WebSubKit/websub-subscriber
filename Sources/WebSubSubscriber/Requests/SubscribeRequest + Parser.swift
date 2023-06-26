@@ -119,18 +119,10 @@ extension SubscribeRequest: RequestParser {
                     on: req.db
                 ) {
                     if subscription.topic != topic {
-                        if req.application.environment == .testing {
-                            return .failure(
-                                ErrorResponse(
-                                    code: .notFound,
-                                    message: "Invalid topic"
-                                )
-                            )
-                        }
                         return .failure(
                             ErrorResponse(
                                 code: .notFound,
-                                message: "Not found"
+                                message: "Invalid topic"
                             )
                         )
                     }
@@ -155,18 +147,10 @@ extension SubscribeRequest: RequestParser {
                 return .failure(reason)
             }
         } catch {
-            if req.application.environment == .testing {
-                return .failure(
-                    ErrorResponse(
-                        code: .notFound,
-                        message: error.localizedDescription
-                    )
-                )
-            }
             return .failure(
                 ErrorResponse(
-                    code: .notFound,
-                    message: "Not found"
+                    code: .badRequest,
+                    message: error.localizedDescription
                 )
             )
         }
