@@ -102,13 +102,15 @@ public final class SubscriptionModels {
         hub: String,
         callback: String,
         state: Subscription.State,
+        leaseSeconds: Int?,
         on db: Database
     ) async throws -> SubscriptionModel {
         let subscription = SubscriptionModel(
             topic: topic,
             hub: hub,
             callback: callback,
-            state: state
+            state: state,
+            leaseSeconds: leaseSeconds
         )
         try await subscription.save(on: db)
         return subscription

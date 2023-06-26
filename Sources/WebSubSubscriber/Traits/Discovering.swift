@@ -22,6 +22,7 @@
 //  SOFTWARE.
 //
 
+import Fluent
 import Vapor
 
 
@@ -46,6 +47,7 @@ public extension Discovering {
                 hub: requestedHub,
                 callback: callback,
                 state: state,
+                leaseSeconds: subscribeRequest.leaseSeconds,
                 on: req.db
             )
         }
@@ -62,6 +64,7 @@ public extension Discovering {
             hub: hub.string,
             callback: callback,
             state: state,
+            leaseSeconds: subscribeRequest.leaseSeconds,
             on: req.db
         )
     }

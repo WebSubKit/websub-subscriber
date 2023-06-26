@@ -48,7 +48,7 @@ public extension Subscribing {
                     topic: subscription.topic,
                     verify: "sync",
                     mode: mode,
-                    leaseSeconds: try? req.query.get(at: "lease_seconds")
+                    leaseSeconds: subscription.leaseSeconds
                 ), as: .urlEncodedForm
             )
         }
