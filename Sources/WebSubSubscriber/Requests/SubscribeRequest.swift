@@ -96,7 +96,9 @@ extension SubscribeRequest {
 }
 
 
-public struct QuerySubscribeRequest: Codable {
+// MARK: - Query Subscribe Request
+
+fileprivate struct QuerySubscribeRequest: Codable {
     
     typealias Mode = SubscriptionVerificationMode
     
