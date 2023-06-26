@@ -28,8 +28,6 @@ import Vapor
 public protocol SubscriberRouteCollection:
         RouteCollection,
         Subscribing,
-        VerifyingToSubscribe,
-        VerifyingToUnsubscribe,
         ReceivingPayload
     {
     
@@ -76,45 +74,29 @@ public extension SubscriberRouteCollection {
     }
     
     func verify(req: Request) async throws -> Response {
-        switch (
-            Result { try req.query.decode(SubscriptionVerificationRequest.self) }
-        ) {
-        case .success(let request):
-            req.logger.info(
-                """
-                A hub attempting to: \(request.mode)
-                verification for topic: \(request.topic)
-                with challenge: \(request.challenge)
-                via callback: \(req.url.path)
-                """
-            )
-            guard let subscription = try await Subscriptions.first(
-                topic: request.topic,
-                callback: req.urlPath,
-                on: req.db
-            ) else {
-                return Response(status: .notFound)
-            }
-            switch request.mode {
+        return try await VerifyRequest(from: req).parse(on: req, then: { subscription, mode, challenge, leaseSeconds in
+            switch mode {
             case .subscribe:
-                return try await self.verifySubscription(
-                    subscription,
-                    verification: request,
-                    on: req
+                subscription.state = .subscribed
+                subscription.lastSuccessfulVerificationAt = Date()
+                if let withLeaseSeconds = leaseSeconds {
+                    subscription.expiredAt = Calendar.current.date(byAdding: .second, value: withLeaseSeconds, to: Date())
+                }
+                try await subscription.save(on: req.db)
+                return Response(
+                    status: .accepted,
+                    body: .init(stringLiteral: challenge)
                 )
             case .unsubscribe:
-                return try await self.verifyUnsubscription(
-                    subscription,
-                    verification: request,
-                    on: req
+                subscription.state = .unsubscribed
+                subscription.lastSuccessfulVerificationAt = Date()
+                try await subscription.save(on: req.db)
+                return Response(
+                    status: .accepted,
+                    body: .init(stringLiteral: challenge)
                 )
             }
-        case .failure(let reason):
-            return try await ErrorResponse(
-                code: .badRequest,
-                message: reason.localizedDescription
-            ).encodeResponse(status: .badRequest, for: req)
-        }
+        })
     }
     
     func receiving(req: Request) async throws -> Response {

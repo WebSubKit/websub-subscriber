@@ -29,8 +29,24 @@ public protocol RequestParser {
     
     associatedtype ParsedType
     
+    init(from req: Request) async
+    
     func parse(on req: Request, then: @escaping(_ parsed: ParsedType) async throws -> Response) async throws -> Response
     
     func parse(on req: Request) async -> Result<ParsedType, ErrorResponse>
+    
+}
+
+
+public extension RequestParser {
+    
+    func parse(on req: Request, then: @escaping(_ parsed: ParsedType) async throws -> Response) async throws -> Response {
+        switch await self.parse(on: req) {
+        case .success(let parsed):
+            return try await then(parsed)
+        case .failure(let reason):
+            return try await reason.encodeResponse(for: req)
+        }
+    }
     
 }

@@ -1,6 +1,6 @@
 //
-//  VerifyingToUnsubscribe.swift
-//
+//  VerifyRequest.swift
+//  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,30 +25,10 @@
 import Vapor
 
 
-public protocol VerifyingToUnsubscribe {
+public enum VerifyRequest {
     
-    func verifyUnsubscription(_ subscription: SubscriptionModel, verification: Subscription.Verification.Request, on req: Request) async throws -> Response
+    case verify(mode: SubscriptionMode, subscription: SubscriptionModel, challenge: String, leaseSeconds: Int?, req: Request)
     
-}
-
-
-public extension VerifyingToUnsubscribe {
-    
-    func verifyUnsubscription(_ subscription: SubscriptionModel, verification: Subscription.Verification.Request, on req: Request) async throws -> Response {
-        switch subscription.state {
-        case .pendingUnsubscription:
-            subscription.state = .unsubscribed
-            subscription.lastSuccessfulVerificationAt = Date()
-            try await subscription.save(on: req.db)
-            return Response(
-                status: .accepted,
-                body: .init(stringLiteral: verification.challenge)
-            )
-        default:
-            subscription.lastUnsuccessfulVerificationAt = Date()
-            try await subscription.save(on: req.db)
-            return Response(status: .notFound)
-        }
-    }
+    case failure(reason: ErrorResponse, req: Request)
     
 }

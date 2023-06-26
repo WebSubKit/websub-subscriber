@@ -29,12 +29,55 @@ extension SubscribeRequest: RequestParser {
     
     public typealias ParsedType = (Subscription, SubscriptionMode)
     
-    public func parse(on req: Vapor.Request, then: @escaping ((Subscription, SubscriptionMode)) async throws -> Response) async throws -> Response {
-        switch await self.parse(on: req) {
-        case .success((let subscription, let mode)):
-            return try await then((subscription, mode))
+    public init(from req: Request) async {
+        switch (
+            Result { try req.query.decode(QuerySubscribeRequest.self) }
+        ) {
+        case .success(let request):
+            let mode = request.mode ?? .subscribe
+            switch mode {
+            case .subscribe:
+                if let hub = request.hub {
+                    self = .subscribeWithPreferredHub(
+                        topic: request.topic,
+                        hub: hub,
+                        leaseSeconds: request.leaseSeconds,
+                        req: req
+                    )
+                    return
+                }
+                self = .subscribeWithNoPreferredHub(
+                    topic: request.topic,
+                    leaseSeconds: request.leaseSeconds,
+                    req: req
+                )
+                return
+            case .unsubscribe:
+                guard let callback = request.callback else {
+                    self = .failure(
+                        reason: ErrorResponse(
+                            code: .badRequest,
+                            message: "Callback should be present on unsubscribe mode"
+                        ),
+                        req: req
+                    )
+                    return
+                }
+                self = .unsubscribe(
+                    topic: request.topic,
+                    callback: callback,
+                    req: req
+                )
+                return
+            }
         case .failure(let reason):
-            return try await reason.encodeResponse(for: req)
+            self = .failure(
+                reason: ErrorResponse(
+                    code: .badRequest,
+                    message: reason.localizedDescription
+                ),
+                req: req
+            )
         }
     }
     
@@ -137,3 +180,33 @@ extension SubscribeRequest: RequestParser {
     }
     
 }
+
+
+// MARK: - Query Subscribe Request
+
+fileprivate struct QuerySubscribeRequest: Codable {
+    
+    typealias Mode = SubscriptionMode
+    
+    let topic: String
+    
+    let mode: QuerySubscribeRequest.Mode?
+    
+    let hub: String?
+    
+    let callback: String?
+    
+    let leaseSeconds: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case topic = "topic"
+        case mode = "mode"
+        case hub = "hub"
+        case callback = "callback"
+        case leaseSeconds = "lease_seconds"
+    }
+    
+}
+
+
+extension QuerySubscribeRequest: Content { }
