@@ -32,8 +32,6 @@ public protocol Subscription {
     
     typealias State = SubscriptionState
     
-    typealias Verification = SubscriptionVerification
-    
     var topic: String { get }
     
     var hub: String { get }
@@ -77,24 +75,7 @@ public enum SubscriptionState: String {
 extension SubscriptionState: Codable { }
 
 
-// MARK: - Subscription Verification
-
-public protocol SubscriptionVerification {
-    
-    typealias Mode = SubscriptionMode
-    
-    typealias Request = SubscriptionVerificationRequest
-    
-    var mode: Mode { get }
-    
-    var topic: String { get }
-    
-    var challenge: String { get }
-    
-    var leaseSeconds: Int? { get }
-    
-}
-
+// MARK: - Subscription Mode
 
 public enum SubscriptionMode: String {
     
@@ -106,28 +87,3 @@ public enum SubscriptionMode: String {
 
 
 extension SubscriptionMode: Codable { }
-
-
-public struct SubscriptionVerificationRequest: Subscription.Verification {
-    
-    public let mode: Subscription.Verification.Mode
-    
-    public let topic: String
-    
-    public let challenge: String
-    
-    public let leaseSeconds: Int?
-    
-}
-
-
-extension SubscriptionVerificationRequest: Codable {
-    
-    enum CodingKeys: String, CodingKey {
-        case mode = "hub.mode"
-        case topic = "hub.topic"
-        case challenge = "hub.challenge"
-        case leaseSeconds = "hub.lease_seconds"
-    }
-    
-}
