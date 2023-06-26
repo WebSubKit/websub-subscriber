@@ -27,9 +27,9 @@ import Vapor
 
 extension SubscribeRequest: RequestParser {
     
-    public typealias ParsedType = (Subscription, SubscriptionVerificationMode)
+    public typealias ParsedType = (Subscription, SubscriptionMode)
     
-    public func parse(on req: Vapor.Request, then: @escaping ((Subscription, SubscriptionVerificationMode)) async throws -> Response) async throws -> Response {
+    public func parse(on req: Vapor.Request, then: @escaping ((Subscription, SubscriptionMode)) async throws -> Response) async throws -> Response {
         switch await self.parse(on: req) {
         case .success((let subscription, let mode)):
             return try await then((subscription, mode))

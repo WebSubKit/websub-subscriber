@@ -71,7 +71,7 @@ public extension Subscribing {
 
 fileprivate struct SubscribeRequestToHub: Codable {
     
-    typealias Mode = SubscriptionVerificationMode
+    typealias Mode = SubscriptionMode
     
     let callback: String
     

@@ -76,7 +76,7 @@ extension SubscriptionState: Codable { }
 
 public protocol SubscriptionVerification {
     
-    typealias Mode = SubscriptionVerificationMode
+    typealias Mode = SubscriptionMode
     
     typealias Request = SubscriptionVerificationRequest
     
@@ -91,7 +91,7 @@ public protocol SubscriptionVerification {
 }
 
 
-public enum SubscriptionVerificationMode: String {
+public enum SubscriptionMode: String {
     
     case subscribe
     
@@ -100,7 +100,7 @@ public enum SubscriptionVerificationMode: String {
 }
 
 
-extension SubscriptionVerificationMode: Codable { }
+extension SubscriptionMode: Codable { }
 
 
 public struct SubscriptionVerificationRequest: Subscription.Verification {

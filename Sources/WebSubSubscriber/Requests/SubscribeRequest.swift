@@ -100,7 +100,7 @@ extension SubscribeRequest {
 
 fileprivate struct QuerySubscribeRequest: Codable {
     
-    typealias Mode = SubscriptionVerificationMode
+    typealias Mode = SubscriptionMode
     
     let topic: String
     
