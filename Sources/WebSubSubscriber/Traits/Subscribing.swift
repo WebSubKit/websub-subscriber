@@ -43,13 +43,13 @@ public extension Subscribing {
         )
         let subscribe = try await req.client.post(hub) { subscribeRequest in
             return try subscribeRequest.content.encode(
-                VerifyRequest(
+                SubscribeRequestToHub(
                     callback: subscription.callback,
                     topic: subscription.topic,
                     verify: "sync",
                     mode: mode,
                     leaseSeconds: subscription.leaseSeconds
-                ), as: .urlEncodedForm
+                )
             )
         }
         req.logger.info(
@@ -65,5 +65,37 @@ public extension Subscribing {
         }
         return Response(status: .ok)
     }
+    
+}
+
+
+fileprivate struct SubscribeRequestToHub: Codable {
+    
+    typealias Mode = SubscriptionVerificationMode
+    
+    let callback: String
+    
+    let topic: String
+    
+    let verify: String
+    
+    let mode: Mode
+    
+    let leaseSeconds: Int?
+    
+    public enum CodingKeys: String, CodingKey {
+        case callback = "hub.callback"
+        case topic = "hub.topic"
+        case verify = "hub.verify"
+        case mode = "hub.mode"
+        case leaseSeconds = "hub.lease_seconds"
+    }
+    
+}
+
+
+extension SubscribeRequestToHub: Content {
+    
+    static var defaultContentType: HTTPMediaType = .urlEncodedForm
     
 }
