@@ -1,5 +1,5 @@
 //
-//  SubscriptionRequest.swift
+//  VerifyRequest.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -24,7 +24,7 @@
 
 import Vapor
 
-public struct SubscriptionRequest: Codable {
+public struct VerifyRequest: Codable {
     
     typealias Mode = SubscriptionVerificationMode
     
@@ -34,7 +34,7 @@ public struct SubscriptionRequest: Codable {
     
     let verify: String
     
-    let mode: SubscriptionRequest.Mode
+    let mode: VerifyRequest.Mode
     
     let leaseSeconds: Int?
     
@@ -49,7 +49,7 @@ public struct SubscriptionRequest: Codable {
 }
 
 
-extension SubscriptionRequest: Content {
+extension VerifyRequest: Content {
     
     public static var defaultContentType: HTTPMediaType = .urlEncodedForm
     

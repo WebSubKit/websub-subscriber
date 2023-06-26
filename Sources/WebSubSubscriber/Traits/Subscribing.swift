@@ -43,7 +43,7 @@ public extension Subscribing {
         )
         let subscribe = try await req.client.post(hub) { subscribeRequest in
             return try subscribeRequest.content.encode(
-                SubscriptionRequest(
+                VerifyRequest(
                     callback: subscription.callback,
                     topic: subscription.topic,
                     verify: "sync",
