@@ -1,5 +1,5 @@
 //
-//  RequestParser.swift
+//  RequestHandler.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,26 +25,23 @@
 import Vapor
 
 
-@available(*, unavailable)
-public protocol RequestParser {
+public protocol RequestHandler {
     
-    associatedtype ParsedType
+    associatedtype ResultType
     
-    init(from req: Request) async
+    func handle(on req: Request) async -> Result<ResultType, ErrorResponse>
     
-    func parse(on req: Request, then: @escaping(_ parsed: ParsedType) async throws -> Response) async throws -> Response
-    
-    func parse(on req: Request) async -> Result<ParsedType, ErrorResponse>
+    func handle(on req: Request, then: @escaping(_ handled: ResultType) async throws -> Response) async throws -> Response
     
 }
 
 
-public extension RequestParser {
+public extension RequestHandler {
     
-    func parse(on req: Request, then: @escaping(_ parsed: ParsedType) async throws -> Response) async throws -> Response {
-        switch await self.parse(on: req) {
-        case .success(let parsed):
-            return try await then(parsed)
+    func handle(on req: Request, then: @escaping(_ handled: ResultType) async throws -> Response) async throws -> Response {
+        switch await self.handle(on: req) {
+        case .success(let handled):
+            return try await then(handled)
         case .failure(let reason):
             return try await reason.encodeResponse(for: req)
         }
