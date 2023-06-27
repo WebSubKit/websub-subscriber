@@ -66,13 +66,13 @@ extension ReceivePayloadUseCases: RequestHandler {
                     """
                     Receiving payload: subscription found & check links
                     request.id   : \(req.id)
-                    s.topic      : \(subsTopicHub.topic)
-                    s.hub        : \(subsTopicHub.hub)
+                    s.topic      : \(subsTopicHub.topic.string)
+                    s.hub        : \(subsTopicHub.hub.host ?? "")
                     p.topic      : \(topic.string)
-                    p.hub        : \(hub.string)
+                    p.hub        : \(hub.host ?? "")
                     """
                 )
-                if !(topic.string == subsTopicHub.topic.string && hub.host == subsTopicHub.hub.host) {
+                if topic.string == subsTopicHub.topic.string && hub.host == subsTopicHub.hub.host {
                     req.logger.info(
                         """
                         Receiving payload: subscription found & links valid
