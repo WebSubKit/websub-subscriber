@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
@@ -37,7 +36,7 @@ public struct SubscribeRequestToHub {
 
 extension SubscribeRequestToHub {
     
-    public init(mode: SubscriptionMode, subscription: any Subscription & Model) throws {
+    public init(mode: SubscriptionMode, subscription: SubscriptionModel) throws {
         self.hub = URI(string: subscription.hub)
         self.content = SubscribeRequestToHubContent(
             callback: subscription.callback,

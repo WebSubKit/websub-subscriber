@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
@@ -37,9 +36,9 @@ public enum ReceivePayloadUseCases {
 
 extension ReceivePayloadUseCases: RequestHandler {
     
-    public typealias ResultType = (validPayload: Request, subscription: any Subscription & Model)
+    public typealias ResultType = (validPayload: Request, subscription: SubscriptionModel)
     
-    public func handle(on req: Request) async -> Result<(validPayload: Request, subscription: any Subscription & Model), ErrorResponse> {
+    public func handle(on req: Request) async -> Result<(validPayload: Request, subscription: SubscriptionModel), ErrorResponse> {
         do {
             switch self {
             case .maybeValid(let payload, let topic, let hub):

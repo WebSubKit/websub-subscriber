@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
@@ -39,9 +38,9 @@ public enum SubscribeRequestUseCases {
 
 extension SubscribeRequestUseCases: RequestHandler {
     
-    public typealias ResultType = (SubscriptionMode, any Subscription & Model)
+    public typealias ResultType = (SubscriptionMode, SubscriptionModel)
     
-    public func handle(on req: Request) async -> Result<(SubscriptionMode, any Subscription & Model), ErrorResponse> {
+    public func handle(on req: Request) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
         do {
             switch self {
             case .subscribeWithNoPreferredHub(let topic, let leaseSeconds, let req):

@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
@@ -30,7 +29,7 @@ public protocol Receiving {
     
     func receiving(from request: Request) async throws -> Response
     
-    func receiving(from request: Request, received: (validPayload: Request, subscription: any Subscription & Model)) async throws -> Response
+    func receiving(from request: Request, received: (validPayload: Request, subscription: SubscriptionModel)) async throws -> Response
     
 }
 

@@ -22,15 +22,14 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
 public enum VerifyRequestUseCases {
     
-    case verifySubscribe(subscription: any Subscription & Model, leaseSeconds: Int?, challenge: String)
+    case verifySubscribe(subscription: SubscriptionModel, leaseSeconds: Int?, challenge: String)
     
-    case verifyUnsubscribe(subscription: any Subscription & Model, challenge: String)
+    case verifyUnsubscribe(subscription: SubscriptionModel, challenge: String)
     
 }
 

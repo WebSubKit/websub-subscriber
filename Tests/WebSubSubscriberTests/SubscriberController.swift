@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 import WebSubSubscriber
 
@@ -35,7 +34,7 @@ struct SubscriberController: SubscriberRouteCollection {
         self.path = path
     }
     
-    func receiving(from request: Request, received: (validPayload: Request, subscription: any Subscription & Model)) async throws -> Response {
+    func receiving(from request: Request, received: (validPayload: Request, subscription: SubscriptionModel)) async throws -> Response {
         return Response(status: .noContent)
     }
     

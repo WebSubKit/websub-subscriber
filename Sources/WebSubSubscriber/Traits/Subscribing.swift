@@ -22,7 +22,6 @@
 //  SOFTWARE.
 //
 
-import Fluent
 import Vapor
 
 
@@ -32,7 +31,7 @@ public protocol Subscribing {
     
     func subscribing(from request: Request, with useCase: SubscribeRequestUseCases) async throws -> Response
     
-    func subscribing(from request: Request, for subscription: (mode: SubscriptionMode, item: any Subscription & Model)) async throws -> Response
+    func subscribing(from request: Request, for subscription: (mode: SubscriptionMode, item: SubscriptionModel)) async throws -> Response
     
     func subscribing(from request: Request, then: (hub: URI, createClientRequest: (inout ClientRequest) throws -> ())) async throws -> Response
         
@@ -49,7 +48,7 @@ public extension Subscribing {
         return try await useCase.handle(on: request, then: self.subscribing)
     }
     
-    func subscribing(from request: Request, for subscription: (mode: SubscriptionMode, item: any Subscription & Model)) async throws -> Response {
+    func subscribing(from request: Request, for subscription: (mode: SubscriptionMode, item: SubscriptionModel)) async throws -> Response {
         return try await SubscribeRequestToHub(mode: subscription.mode, subscription: subscription.item).handle(on: request, then: self.subscribing)
     }
     
