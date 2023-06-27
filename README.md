@@ -50,7 +50,7 @@ To integrate `WebSubSubscriber` into your project, specify it in your `Package.s
 let package = Package(
     ...
     dependencies: [
-        .package(url: "https://github.com/WebSubKit/websub-subscriber.git", from: "0.10.0"),
+        .package(url: "https://github.com/WebSubKit/websub-subscriber.git", from: "0.11.0"),
     ]
     ...
     targets: [
@@ -84,7 +84,7 @@ struct SubscriberController: SubscriberRouteCollection {
     
     let path: PathComponent = ""
     
-    func payload(req: Request) async throws -> Response {
+        func receiving(from request: Request, received: (validPayload: Request, subscription: SubscriptionModel)) async throws -> Response {
         // handle the delivered payload here ...
         return Response(status: .noContent)
     }
