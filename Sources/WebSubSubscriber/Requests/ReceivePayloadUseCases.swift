@@ -46,12 +46,37 @@ extension ReceivePayloadUseCases: RequestHandler {
                     callback: req.urlPath,
                     on: req.db
                 ) else {
+                    req.logger.info(
+                        """
+                        Receiving payload: subscription not found
+                        request.id   : \(req.id)
+                        """
+                    )
                     throw HTTPResponseStatus.notFound
                 }
+                req.logger.info(
+                    """
+                    Receiving payload: subscription found
+                    request.id   : \(req.id)
+                    subscription : \(subscription.id?.uuidString ?? "")
+                    """
+                )
                 let subsTopicHub = (topic: URI(string: subscription.topic), hub: URI(string: subscription.hub))
                 if !(topic.string == subsTopicHub.topic.string && hub.host == subsTopicHub.hub.host) {
+                    req.logger.info(
+                        """
+                        Receiving payload: subscription found & links valid
+                        request.id   : \(req.id)
+                        """
+                    )
                     return .success((payload, subscription))
                 }
+                req.logger.info(
+                    """
+                    Receiving payload: subscription found but links invalid
+                    request.id   : \(req.id)
+                    """
+                )
                 throw HTTPResponseStatus.notFound
             case .invalid:
                 throw HTTPResponseStatus.notFound
@@ -73,9 +98,23 @@ extension ReceivePayloadUseCases {
     
     init(from request: Request) {
         guard let links = request.headers.extractWebSubLinks() ?? request.body.string?.extractWebSubLinks() else {
+            request.logger.info(
+                """
+                Receiving payload: invalid
+                request.id   : \(request.id)
+                """
+            )
             self = .invalid
             return
         }
+        request.logger.info(
+            """
+            Receiving payload: maybe valid
+            request.id   : \(request.id)
+            topic links  : \(links.topic)
+            hub links    : \(links.hub)
+            """
+        )
         self = .maybeValid(payload: request, topic: links.topic, hub: links.hub)
     }
     

@@ -37,7 +37,13 @@ public protocol Receiving {
 public extension Receiving {
     
     func receiving(from request: Request) async throws -> Response {
-        try await ReceivePayloadUseCases(from: request).handle(on: request, then: self.receiving)
+        request.logger.info(
+            """
+            Receiving payload
+            request.id   : \(request.id)
+            """
+        )
+        return try await ReceivePayloadUseCases(from: request).handle(on: request, then: self.receiving)
     }
     
 }
