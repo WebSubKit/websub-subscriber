@@ -62,6 +62,16 @@ extension ReceivePayloadUseCases: RequestHandler {
                     """
                 )
                 let subsTopicHub = (topic: URI(string: subscription.topic), hub: URI(string: subscription.hub))
+                req.logger.info(
+                    """
+                    Receiving payload: subscription found & check links
+                    request.id   : \(req.id)
+                    s.topic      : \(subsTopicHub.topic)
+                    s.hub        : \(subsTopicHub.hub)
+                    p.topic      : \(topic.string)
+                    p.hub        : \(hub.string)
+                    """
+                )
                 if !(topic.string == subsTopicHub.topic.string && hub.host == subsTopicHub.hub.host) {
                     req.logger.info(
                         """
