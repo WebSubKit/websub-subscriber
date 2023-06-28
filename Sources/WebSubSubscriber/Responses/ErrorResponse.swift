@@ -24,7 +24,7 @@
 
 import Vapor
 
-public struct ErrorResponse: Codable {
+public struct ErrorResponse {
     
     public let code: HTTPResponseStatus
     
