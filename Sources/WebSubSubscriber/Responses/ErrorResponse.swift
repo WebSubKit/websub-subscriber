@@ -37,3 +37,12 @@ extension ErrorResponse: Content { }
 
 
 extension ErrorResponse: Error { }
+
+
+public extension ErrorResponse {
+    
+    init(code: HTTPResponseStatus) {
+        self.init(code: code, message: "")
+    }
+    
+}
