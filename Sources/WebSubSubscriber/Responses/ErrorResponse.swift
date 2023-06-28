@@ -30,6 +30,11 @@ public struct ErrorResponse {
     
     public let message: String
     
+    public init(code: HTTPResponseStatus, message: String) {
+        self.code = code
+        self.message = message
+    }
+    
 }
 
 
