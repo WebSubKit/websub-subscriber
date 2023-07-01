@@ -40,7 +40,7 @@ public protocol Verifying {
 public extension Verifying {
     
     func verifying(from request: Request) async throws -> Response {
-        return try await request.query.decode(VerifyRequestRaw.self).handle(on: request, then: self.verifying)
+        return try await request.query.decode(VerifyRequest.self).handle(on: request, then: self.verifying)
     }
     
     func verifying(from request: Request, with useCase: VerifyRequestUseCases) async throws -> Response {

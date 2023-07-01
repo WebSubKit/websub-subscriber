@@ -1,5 +1,5 @@
 //
-//  VerifyRequestRaw.swift
+//  VerifyRequest.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,7 +25,7 @@
 import Vapor
 
 
-public struct VerifyRequestRaw: Codable {
+public struct VerifyRequest: Codable {
     
     public let mode: SubscriptionMode
     
@@ -45,10 +45,10 @@ public struct VerifyRequestRaw: Codable {
 }
 
 
-extension VerifyRequestRaw: Content { }
+extension VerifyRequest: Content { }
 
 
-extension VerifyRequestRaw: RequestHandler {
+extension VerifyRequest: RequestHandler {
     
     public typealias ResultType = VerifyRequestUseCases
     
@@ -123,7 +123,7 @@ extension VerifyRequestRaw: RequestHandler {
 }
 
 
-extension VerifyRequestRaw {
+extension VerifyRequest {
     
     func isValid(for state: SubscriptionState) -> Bool {
         return (self.mode == .subscribe && state == .pendingSubscription) ||
