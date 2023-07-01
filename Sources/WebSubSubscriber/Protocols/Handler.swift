@@ -30,3 +30,53 @@ public protocol Handler {
     associatedtype ResultType
     
 }
+
+
+// MARK: - Request Handler
+
+public protocol RequestHandler: Handler {
+    
+    func handle(on req: Request) async -> Result<ResultType, ErrorResponse>
+    
+    func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response
+    
+}
+
+
+extension RequestHandler {
+    
+    public func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response {
+        switch await self.handle(on: req) {
+        case .success(let handled):
+            return try await then(req, handled)
+        case .failure(let reason):
+            return try await reason.encodeResponse(for: req)
+        }
+    }
+    
+}
+
+
+// MARK: - Command Handler
+
+public protocol CommandHandler: Handler {
+    
+    func handle(on ctx: CommandContext) async -> Result<ResultType, ErrorResponse>
+    
+    func handle(on ctx: CommandContext, then: @escaping(_ ctx: CommandContext, _ handled: ResultType) async throws -> Void) async throws
+    
+}
+
+
+extension CommandHandler {
+    
+    public func handle(on ctx: CommandContext, then: @escaping(_ ctx: CommandContext, _ handled: ResultType) async throws -> Void) async throws {
+        switch await self.handle(on: ctx) {
+        case .success(let handled):
+            return try await then(ctx, handled)
+        case .failure(let reason):
+            throw reason
+        }
+    }
+    
+}
