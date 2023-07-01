@@ -39,6 +39,8 @@ public struct Unsubscribe: AsyncCommand {
         
     }
     
+    public init() { }
+    
     public var help: String = "Unsubscribe a subscription"
     
     public func run(using context: CommandContext, signature: Signature) async throws {

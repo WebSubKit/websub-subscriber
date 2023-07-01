@@ -42,6 +42,8 @@ public struct Subscribe: AsyncCommand {
         
     }
     
+    public init() { }
+    
     public var help: String = "Subscribe a topic"
     
     public func run(using context: CommandContext, signature: Signature) async throws {
