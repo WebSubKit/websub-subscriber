@@ -28,12 +28,6 @@ import Vapor
 public protocol Subscribing {
     
     func subscribing(from request: Request) async throws -> Response
-    
-    func subscribing(from request: Request, with useCase: SubscribeRequestUseCases) async throws -> Response
-    
-    func subscribing(from request: Request, for subscription: (mode: SubscriptionMode, item: SubscriptionModel)) async throws -> Response
-    
-    func subscribing(from request: Request, then: (hub: URI, createClientRequest: (inout ClientRequest) throws -> ())) async throws -> Response
         
 }
 

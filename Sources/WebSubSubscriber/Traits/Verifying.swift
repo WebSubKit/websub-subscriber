@@ -30,10 +30,6 @@ public protocol Verifying {
     
     func verifying(from request: Request) async throws -> Response
     
-    func verifying(from request: Request, with useCase: VerifyRequestUseCases) async throws -> Response
-    
-    func verifying(from request: Request, with challenge: String) async throws -> Response
-    
 }
 
 
