@@ -1,5 +1,5 @@
 //
-//  Verifying.swift
+//  SubscribingFromCommand.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,25 +25,32 @@
 import Vapor
 
 
-public protocol Verifying {
+public protocol SubscribingFromCommand {
     
-    func verifying(from request: Request) async throws -> Response
+    func subscribing(from context: CommandContext, with useCase: SubscribeRequestUseCases) async throws
     
 }
 
 
-extension Verifying {
+extension SubscribingFromCommand {
     
-    public func verifying(from request: Request) async throws -> Response {
-        return try await request.query.decode(VerifyRequest.self).handle(on: request, then: self.verifying)
+    public func subscribing(from context: CommandContext, with useCase: SubscribeRequestUseCases) async throws {
+        try await useCase.handle(on: context, then: self.subscribing)
     }
     
-    func verifying(from request: Request, with useCase: VerifyRequestUseCases) async throws -> Response {
-        return try await useCase.handle(on: request, then: self.verifying)
+    func subscribing(from context: CommandContext, for subscription: (mode: SubscriptionMode, item: SubscriptionModel)) async throws {
+        try await SubscribeRequestToHub(mode: subscription.mode, subscription: subscription.item).handle(on: context, then: self.subscribing)
     }
     
-    func verifying(from request: Request, with challenge: String) async throws -> Response {
-        return try await challenge.encodeResponse(status: .accepted, for: request)
+    func subscribing(from context: CommandContext, then: (hub: URI, createClientRequest: (inout ClientRequest) throws -> ())) async throws {
+        let response = try await context.application.client.post(then.hub, beforeSend: then.createClientRequest)
+        context.application.logger.debug(
+            """
+            Response status : \(response.status)
+            Response body :
+            \(response.bodyString ?? "No content body")
+            """
+        )
     }
     
 }

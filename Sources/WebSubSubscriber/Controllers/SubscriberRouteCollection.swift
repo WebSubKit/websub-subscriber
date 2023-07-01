@@ -27,7 +27,7 @@ import Vapor
 
 public protocol SubscriberRouteCollection:
         RouteCollection,
-        Subscribing,
+        SubscribingFromRequest,
         Verifying,
         Receiving
     {

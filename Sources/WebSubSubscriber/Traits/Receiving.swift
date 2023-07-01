@@ -34,9 +34,9 @@ public protocol Receiving {
 }
 
 
-public extension Receiving {
+extension Receiving {
     
-    func receiving(from request: Request) async throws -> Response {
+    public func receiving(from request: Request) async throws -> Response {
         request.logger.info(
             """
             Receiving payload

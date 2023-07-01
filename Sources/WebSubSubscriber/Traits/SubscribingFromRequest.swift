@@ -1,5 +1,5 @@
 //
-//  Subscribing.swift
+//  SubscribingFromRequest.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,16 +25,16 @@
 import Vapor
 
 
-public protocol Subscribing {
+public protocol SubscribingFromRequest {
     
     func subscribing(from request: Request) async throws -> Response
         
 }
 
 
-public extension Subscribing {
+extension SubscribingFromRequest {
     
-    func subscribing(from request: Request) async throws -> Response {
+    public func subscribing(from request: Request) async throws -> Response {
         return try await request.query.decode(SubscribeRequest.self).handle(on: request, then: self.subscribing)
     }
     
