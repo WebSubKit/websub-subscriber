@@ -27,11 +27,11 @@ import Vapor
 
 public enum SubscribeRequestUseCases {
     
-    case subscribeWithNoPreferredHub(topic: String, leaseSeconds: Int?, req: Request)
+    case subscribeWithNoPreferredHub(topic: String, leaseSeconds: Int?)
     
-    case subscribeWithPreferredHub(topic: String, hub: String, leaseSeconds: Int?, req: Request)
+    case subscribeWithPreferredHub(topic: String, hub: String, leaseSeconds: Int?)
     
-    case unsubscribe(topic: String, callback: String, req: Request)
+    case unsubscribe(topic: String, callback: String)
         
 }
 
@@ -41,47 +41,68 @@ extension SubscribeRequestUseCases: RequestHandler {
     public typealias ResultType = (SubscriptionMode, SubscriptionModel)
     
     public func handle(on req: Request) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
+        return await self.handle(req: req)
+    }
+    
+}
+
+
+extension SubscribeRequestUseCases: CommandHandler {
+    
+    public func handle(on ctx: CommandContext) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
+        return await self.handle(ctx: ctx)
+    }
+    
+}
+
+
+extension SubscribeRequestUseCases {
+    
+    func handle(req: Request? = nil, ctx: CommandContext? = nil) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
+        guard let app = req?.application ?? ctx?.application else {
+            return .failure(.init(code: .internalServerError))
+        }
         do {
             switch self {
-            case .subscribeWithNoPreferredHub(let topic, let leaseSeconds, let req):
-                let (preferredTopic, preferredHub) = try await self.discover(topic, on: req)
+            case .subscribeWithNoPreferredHub(let topic, let leaseSeconds):
+                let (preferredTopic, preferredHub) = try await self.discover(topic, on: app)
                 return try await .success(
                     (
                         .subscribe,
                         Subscriptions.create(
                             topic: preferredTopic,
                             hub: preferredHub,
-                            callback: req.generateCallbackURLString(),
+                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(),
                             state: .pendingSubscription,
                             leaseSeconds: leaseSeconds,
-                            on: req.db
+                            on: app.db
                         )
                     )
                 )
-            case .subscribeWithPreferredHub(let topic, let hub, let leaseSeconds, req: let req):
+            case .subscribeWithPreferredHub(let topic, let hub, let leaseSeconds):
                 return try await .success(
                     (
                         .subscribe,
                         Subscriptions.create(
                             topic: topic,
                             hub: hub,
-                            callback: req.generateCallbackURLString(),
+                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(),
                             state: .pendingSubscription,
                             leaseSeconds: leaseSeconds,
-                            on: req.db
+                            on: app.db
                         )
                     )
                 )
-            case .unsubscribe(let topic, let callback, let req):
+            case .unsubscribe(let topic, let callback):
                 if let subscription = try await Subscriptions.first(
                     callback: callback,
-                    on: req.db
+                    on: app.db
                 ) {
                     if subscription.topic != topic {
-                        req.logger.error(
+                        app.logger.error(
                             """
                             Received unsubscribe request, with error: Invalid topic
-                            request.id   : \(req.id)
+                            request.id   : \(req?.id ?? "-")
                             topic on db  : \(subscription.topic)
                             topic on req : \(topic)
                             """
@@ -94,10 +115,10 @@ extension SubscribeRequestUseCases: RequestHandler {
                         )
                     }
                     subscription.state = .pendingUnsubscription
-                    try await subscription.save(on: req.db)
+                    try await subscription.save(on: app.db)
                     return .success((.unsubscribe, subscription))
                 }
-                let (preferredTopic, preferredHub) = try await self.discover(topic, on: req)
+                let (preferredTopic, preferredHub) = try await self.discover(topic, on: app)
                 return try await .success(
                     (
                         .unsubscribe,
@@ -106,16 +127,16 @@ extension SubscribeRequestUseCases: RequestHandler {
                             hub: preferredHub,
                             callback: callback,
                             state: .pendingUnsubscription,
-                            on: req.db
+                            on: app.db
                         )
                     )
                 )
             }
         } catch {
-            req.logger.error(
+            app.logger.error(
                 """
                 Request throwed errors
-                request.id   : \(req.id)
+                request.id   : \(req?.id ?? "-")
                 err. message : \(error.localizedDescription)
                 """
             )
@@ -128,11 +149,15 @@ extension SubscribeRequestUseCases: RequestHandler {
         }
     }
     
-    private func discover(_ topic: String, on req: Request) async throws -> (topic: String, hub: String) {
-        guard let (preferredTopic, preferredHub) = try await req.client.get(URI(string: topic)).extractWebSubLinks() else {
+    fileprivate func discover(_ topic: String, on app: Application) async throws -> (topic: String, hub: String) {
+        guard let (preferredTopic, preferredHub) = try await app.client.get(URI(string: topic)).extractWebSubLinks() else {
             throw HTTPResponseStatus.notFound
         }
         return (preferredTopic.string, preferredHub.string)
+    }
+    
+    fileprivate func generateCallbackURLString() -> String {
+        return "\(Environment.get("WEBSUB_HOST") ?? "")/callback/\(UUID().uuidString)"
     }
     
 }

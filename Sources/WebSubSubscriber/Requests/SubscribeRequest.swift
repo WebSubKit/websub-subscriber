@@ -75,8 +75,7 @@ extension SubscribeRequest: RequestHandler {
                     .subscribeWithPreferredHub(
                         topic: self.topic,
                         hub: hub,
-                        leaseSeconds: self.leaseSeconds,
-                        req: req
+                        leaseSeconds: self.leaseSeconds
                     )
                 )
             }
@@ -91,8 +90,7 @@ extension SubscribeRequest: RequestHandler {
             return .success(
                 .subscribeWithNoPreferredHub(
                     topic: self.topic,
-                    leaseSeconds: self.leaseSeconds,
-                    req: req
+                    leaseSeconds: self.leaseSeconds
                 )
             )
         case .unsubscribe:
@@ -121,8 +119,7 @@ extension SubscribeRequest: RequestHandler {
             return .success(
                 .unsubscribe(
                     topic: self.topic,
-                    callback: callback,
-                    req: req
+                    callback: callback
                 )
             )
         }
