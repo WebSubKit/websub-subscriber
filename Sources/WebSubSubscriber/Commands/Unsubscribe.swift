@@ -25,7 +25,7 @@
 import Vapor
 
 
-public struct Unsubscribe: AsyncCommand {
+public struct Unsubscribe: Command {
     
     public struct Signature: CommandSignature {
         
@@ -43,8 +43,16 @@ public struct Unsubscribe: AsyncCommand {
     
     public var help: String = "Unsubscribe a subscription"
     
-    public func run(using context: CommandContext, signature: Signature) async throws {
-        try await signature.handle(on: context, then: self.subscribing)
+    public func run(using context: CommandContext, signature: Signature) throws {
+        let promise = context
+            .application
+            .eventLoopGroup
+            .next()
+            .makePromise(of: Void.self)
+        promise.completeWithTask {
+            try await signature.handle(on: context, then: self.subscribing)
+        }
+        try promise.futureResult.wait()
     }
     
 }
