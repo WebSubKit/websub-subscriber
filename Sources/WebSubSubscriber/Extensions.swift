@@ -1,5 +1,5 @@
 //
-//  HTTPResponseStatus + Error.swift
+//  File.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,4 +25,33 @@
 import Vapor
 
 
+// MARK: - HTTPResponseStatus Extensions
+
 extension HTTPResponseStatus: Error { }
+
+
+// MARK: - Request Extensions
+
+extension Request {
+    
+    func generateCallbackURLString() -> String {
+        return "\(Environment.get("WEBSUB_HOST") ?? "")\(self.url.path.dropSuffix("/subscribe"))/callback/\(UUID().uuidString)"
+    }
+    
+    var urlPath: String {
+        return "\(Environment.get("WEBSUB_HOST") ?? "")\(self.url.path)"
+    }
+    
+}
+
+
+// MARK: - String Extensions
+
+fileprivate extension String {
+    
+    func dropSuffix(_ suffix: String) -> String {
+        guard self.hasSuffix(suffix) else { return self }
+        return String(self.dropLast(suffix.count))
+    }
+    
+}
