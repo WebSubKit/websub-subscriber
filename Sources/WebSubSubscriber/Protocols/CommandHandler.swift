@@ -1,5 +1,5 @@
 //
-//  RequestHandler.swift
+//  CommandHandler.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,23 +25,23 @@
 import Vapor
 
 
-public protocol RequestHandler: Handler {
+public protocol CommandHandler: Handler {
     
-    func handle(on req: Request) async -> Result<ResultType, ErrorResponse>
+    func handle(on ctx: CommandContext) async -> Result<ResultType, ErrorResponse>
     
-    func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response
+    func handle(on ctx: CommandContext, then: @escaping(_ ctx: CommandContext, _ handled: ResultType) async throws -> Void) async throws
     
 }
 
 
-public extension RequestHandler {
+public extension CommandHandler {
     
-    func handle(on req: Request, then: @escaping(_ req: Request, _ handled: ResultType) async throws -> Response) async throws -> Response {
-        switch await self.handle(on: req) {
+    func handle(on ctx: CommandContext, then: @escaping(_ ctx: CommandContext, _ handled: ResultType) async throws -> Void) async throws {
+        switch await self.handle(on: ctx) {
         case .success(let handled):
-            return try await then(req, handled)
+            return try await then(ctx, handled)
         case .failure(let reason):
-            return try await reason.encodeResponse(for: req)
+            throw reason
         }
     }
     
