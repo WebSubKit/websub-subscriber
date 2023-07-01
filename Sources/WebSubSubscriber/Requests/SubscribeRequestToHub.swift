@@ -55,6 +55,24 @@ extension SubscribeRequestToHub: RequestHandler {
     public typealias ResultType = (URI, (inout ClientRequest) throws -> ())
     
     public func handle(on req: Request) async -> Result<(URI, (inout ClientRequest) throws -> ()), ErrorResponse> {
+        return await self.handle(req: req)
+    }
+    
+}
+
+
+extension SubscribeRequestToHub: CommandHandler {
+    
+    public func handle(on ctx: CommandContext) async -> Result<(URI, (inout ClientRequest) throws -> ()), ErrorResponse> {
+        return await self.handle(ctx: ctx)
+    }
+    
+}
+
+
+extension SubscribeRequestToHub {
+    
+    func handle(req: Request? = nil, ctx: CommandContext? = nil) async -> Result<(URI, (inout ClientRequest) throws -> ()), ErrorResponse> {
         return .success((self.hub, { clientRequest in
             try clientRequest.content.encode(self.content)
         }))
