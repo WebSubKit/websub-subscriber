@@ -1,5 +1,5 @@
 //
-//  SubscribeRequestRaw.swift
+//  SubscribeRequest.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
@@ -25,13 +25,13 @@
 import Vapor
 
 
-public struct SubscribeRequestRaw: Codable {
+public struct SubscribeRequest: Codable {
     
     typealias Mode = SubscriptionMode
     
     let topic: String
     
-    let mode: SubscribeRequestRaw.Mode?
+    let mode: SubscribeRequest.Mode?
     
     let hub: String?
     
@@ -50,10 +50,10 @@ public struct SubscribeRequestRaw: Codable {
 }
 
 
-extension SubscribeRequestRaw: Content { }
+extension SubscribeRequest: Content { }
 
 
-extension SubscribeRequestRaw: RequestHandler {
+extension SubscribeRequest: RequestHandler {
     
     public typealias ResultType = SubscribeRequestUseCases
     

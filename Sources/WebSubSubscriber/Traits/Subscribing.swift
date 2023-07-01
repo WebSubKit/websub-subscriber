@@ -41,7 +41,7 @@ public protocol Subscribing {
 public extension Subscribing {
     
     func subscribing(from request: Request) async throws -> Response {
-        return try await request.query.decode(SubscribeRequestRaw.self).handle(on: request, then: self.subscribing)
+        return try await request.query.decode(SubscribeRequest.self).handle(on: request, then: self.subscribing)
     }
     
     func subscribing(from request: Request, with useCase: SubscribeRequestUseCases) async throws -> Response {
