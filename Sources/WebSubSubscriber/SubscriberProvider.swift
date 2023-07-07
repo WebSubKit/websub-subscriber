@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  SubscriberProvider.swift
+//
 //  Copyright (c) 2023 WebSubKit Contributors
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,33 +25,20 @@
 import Vapor
 
 
-// MARK: - HTTPResponseStatus Extensions
-
-extension HTTPResponseStatus: Error { }
-
-
-// MARK: - Request Extensions
-
-extension Request {
+extension Application {
     
-    func generateCallbackURLString() -> String {
-        return "\(self.application.subscriber.host)\(self.url.path.dropSuffix("/subscribe"))/callback/\(UUID().uuidString)"
+    public struct Subscriber {
+                
+        public var host: String = ""
+        
+        init() {
+            self.host = Environment.get("WEBSUB_HOST") ?? ""
+        }
+        
     }
     
-    var urlPath: String {
-        return "\(self.application.subscriber.host)\(self.url.path)"
-    }
-    
-}
-
-
-// MARK: - String Extensions
-
-fileprivate extension String {
-    
-    func dropSuffix(_ suffix: String) -> String {
-        guard self.hasSuffix(suffix) else { return self }
-        return String(self.dropLast(suffix.count))
+    var subscriber: Subscriber {
+        return .init()
     }
     
 }

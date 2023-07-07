@@ -72,7 +72,7 @@ extension SubscribeRequestUseCases {
                         Subscriptions.create(
                             topic: preferredTopic,
                             hub: preferredHub,
-                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(),
+                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(on: app),
                             state: .pendingSubscription,
                             leaseSeconds: leaseSeconds,
                             on: app.db
@@ -86,7 +86,7 @@ extension SubscribeRequestUseCases {
                         Subscriptions.create(
                             topic: topic,
                             hub: hub,
-                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(),
+                            callback: req?.generateCallbackURLString() ?? self.generateCallbackURLString(on: app),
                             state: .pendingSubscription,
                             leaseSeconds: leaseSeconds,
                             on: app.db
@@ -156,8 +156,8 @@ extension SubscribeRequestUseCases {
         return (preferredTopic.string, preferredHub.string)
     }
     
-    fileprivate func generateCallbackURLString() -> String {
-        return "\(Environment.get("WEBSUB_HOST") ?? "")/callback/\(UUID().uuidString)"
+    fileprivate func generateCallbackURLString(on app: Application) -> String {
+        return "\(app.subscriber.host)/callback/\(UUID().uuidString)"
     }
     
 }
