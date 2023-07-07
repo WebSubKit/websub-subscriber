@@ -37,7 +37,7 @@ extension Application {
         
     }
     
-    var subscriber: Subscriber {
+    public var subscriber: Subscriber {
         return .init()
     }
     
