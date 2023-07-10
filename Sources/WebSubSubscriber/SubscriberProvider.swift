@@ -35,6 +35,10 @@ extension Application {
             self.host = Environment.get("WEBSUB_HOST") ?? ""
         }
         
+        public mutating func host(_ host: String) {
+            self.host = host
+        }
+        
     }
     
     public var subscriber: Subscriber {
