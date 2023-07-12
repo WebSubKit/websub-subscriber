@@ -28,21 +28,46 @@ import Vapor
 extension Application {
     
     public struct Subscriber {
-                
-        public var host: String = ""
-        
-        init() {
-            self.host = Environment.get("WEBSUB_HOST") ?? ""
+
+        final class Storage {
+
+            var host: String
+
+            init(host: String? = nil) {
+                self.host = host ?? Environment.get("WEBSUB_HOST") ?? ""
+            }
+
         }
         
-        public mutating func host(_ host: String) {
-            self.host = host
+        struct Key: StorageKey {
+            typealias Value = Storage
+        }
+
+        let application: Application
+
+        var storage: Storage {
+            if self.application.storage[Key.self] == nil {
+                self.initialize()
+            }
+            return self.application.storage[Key.self]!
+        }
+
+        func initialize() {
+            self.application.storage[Key.self] = .init()
+        }
+
+        public var host: String {
+            self.storage.host
+        }
+
+        public func host(_ host: String) {
+            self.storage.host = host
         }
         
     }
     
     public var subscriber: Subscriber {
-        return .init()
+        return .init(application: self)
     }
     
 }
