@@ -56,5 +56,14 @@ final class WebSubSubscriberTests: XCTestCase {
         }
         
     }
+
+    func testSubscriberStorage() async throws {
+        let app = Application(.testing)
+        defer {
+            app.shutdown()
+        }
+        app.subscriber.host("test.example.com")
+        XCTAssertEqual(app.subscriber.host, "test.example.com")
+    }
     
 }
