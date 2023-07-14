@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Extensions.swift
 //  
 //  Copyright (c) 2023 WebSubKit Contributors
 //
