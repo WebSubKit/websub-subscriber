@@ -80,3 +80,28 @@ extension CommandHandler {
     }
     
 }
+
+
+// MARK: - Application Handler
+
+public protocol ApplicationHandler: Handler {
+
+    func handle(on app: Application) async -> Result<ResultType, ErrorResponse>
+
+    func handle(on app: Application, then: @escaping(_ app: Application, _ handled: ResultType) async throws -> Void) async throws
+
+}
+
+
+extension ApplicationHandler {
+
+    public func handle(on app: Application, then: @escaping(_ app: Application, _ handled: ResultType) async throws -> Void) async throws {
+        switch await self.handle(on: app) {
+        case .success(let handled):
+            return try await then(app, handled)
+        case .failure(let reason):
+            throw reason
+        }
+    }
+
+}

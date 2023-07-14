@@ -41,7 +41,7 @@ extension SubscribeRequestUseCases: RequestHandler {
     public typealias ResultType = (SubscriptionMode, SubscriptionModel)
     
     public func handle(on req: Request) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
-        return await self.handle(req: req)
+        return await self.handle(req: req, app: req.application)
     }
     
 }
@@ -50,18 +50,24 @@ extension SubscribeRequestUseCases: RequestHandler {
 extension SubscribeRequestUseCases: CommandHandler {
     
     public func handle(on ctx: CommandContext) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
-        return await self.handle(ctx: ctx)
+        return await self.handle(ctx: ctx, app: ctx.application)
     }
     
 }
 
 
+extension SubscribeRequestUseCases: ApplicationHandler {
+
+    public func handle(on app: Application) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
+        return await self.handle(app: app)
+    }
+
+}
+
+
 extension SubscribeRequestUseCases {
     
-    func handle(req: Request? = nil, ctx: CommandContext? = nil) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
-        guard let app = req?.application ?? ctx?.application else {
-            return .failure(.init(code: .internalServerError))
-        }
+    func handle(req: Request? = nil, ctx: CommandContext? = nil, app: Application) async -> Result<(SubscriptionMode, SubscriptionModel), ErrorResponse> {
         do {
             switch self {
             case .subscribeWithNoPreferredHub(let topic, let leaseSeconds):
