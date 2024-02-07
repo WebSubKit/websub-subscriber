@@ -50,7 +50,7 @@ extension RequestHandler {
         case .success(let handled):
             return try await then(req, handled)
         case .failure(let reason):
-            return try await reason.encodeResponse(for: req)
+            return try await reason.encodeResponse(status: reason.code, for: req)
         }
     }
     
