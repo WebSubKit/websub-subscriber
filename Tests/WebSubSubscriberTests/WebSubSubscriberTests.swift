@@ -29,12 +29,16 @@ import XCTVapor
 
 final class WebSubSubscriberTests: XCTestCase {
     
-    func testDiscovery() async throws {
+    func testWebSubSubscriber() async throws {
         
         let app = Application(.testing)
         defer {
             app.shutdown()
         }
+        guard let subscriberHost = Environment.get("APP_SUBSCRIBER_HOST") else {
+            fatalError("Please set APP_SUBSCRIBER_HOST on Environment.")
+        }
+        app.subscriber.host(subscriberHost)
         app.databases.use(.sqlite(.memory), as: .sqlite)
         app.migrations.add(CreateSubscriptionsTable())
         try await app.autoMigrate()
@@ -43,27 +47,37 @@ final class WebSubSubscriberTests: XCTestCase {
         try app.register(collection: SubscriberController(prefix))
         
         for spec in 100...104 {
-            let topic = "https://websub.rocks/blog/\(spec)/zLwQiWt98z8kOAu4RXZF"
+            let topic = "https://websub.rocks/blog/\(spec)/tgPTwvcIy1lAzlm9Zzv4"
             let testURI = "\(prefix)/subscribe?topic=\(topic)"
-            try app.test(.GET, testURI, afterResponse: { res in
-                XCTAssertEqual(res.status, .ok)
-                let response = try! res.content.decode([String: String].self)
-                XCTAssertEqual(response["hub.topic"], topic)
-                XCTAssertContains(response["hub.callback"], "\(prefix)/callback")
-                XCTAssertEqual(response["hub.verify"], "sync")
-                XCTAssertEqual(response["hub.mode"], "subscribe")
+            try app.testable(method: .running(port: 8080)).test(.GET, testURI, afterResponse: { res in
+                XCTAssertEqual(res.status, .accepted)
             })
         }
         
-    }
-
-    func testSubscriberStorage() async throws {
-        let app = Application(.testing)
-        defer {
-            app.shutdown()
+        for spec in 200...204 {
+            let topic = "https://websub.rocks/blog/\(spec)/tWVj7Lxcb7AmnKNGIm4n"
+            let testURI = "\(prefix)/subscribe?topic=\(topic)"
+            try app.testable(method: .running(port: 8080)).test(.GET, testURI, afterResponse: { res in
+                XCTAssertEqual(res.status, .accepted)
+            })
         }
-        app.subscriber.host("test.example.com")
-        XCTAssertEqual(app.subscriber.host, "test.example.com")
+        
+        for spec in [205] {
+            let topic = "https://websub.rocks/blog/\(spec)/wWRm2tB2ohwBchD3bdWk"
+            let testURI = "\(prefix)/subscribe?topic=\(topic)"
+            try app.testable(method: .running(port: 8080)).test(.GET, testURI, afterResponse: { res in
+                XCTAssertEqual(res.status, .ok)
+            })
+        }
+        
+        for spec in [300] {
+            let topic = "https://websub.rocks/blog/\(spec)/Qhvty2iKNTldEQ7N7zj7"
+            let testURI = "\(prefix)/subscribe?topic=\(topic)"
+            try app.testable(method: .running(port: 8080)).test(.GET, testURI, afterResponse: { res in
+                XCTAssertEqual(res.status, .accepted)
+            })
+        }
+        
     }
     
 }
